@@ -9,17 +9,44 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatPlayerNameWithNumber } from '@/lib/utils';
 import { getScoreLabel } from '@/lib/definitions';
-import type { Player, PlayerSeasonSummary } from '@/lib/types';
+import type { Player, PlayerSeasonSummary, Team } from '@/lib/types';
 
 export default function PlayersPage() {
+  const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [playerSummaries, setPlayerSummaries] = useState<PlayerSeasonSummary[]>([]);
-  const [selectedTeamId, setSelectedTeamId] = useState<number>(1);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const response = await fetch('/api/teams');
+        if (response.ok) {
+          const teamsData = await response.json();
+          setTeams(teamsData);
+          if (teamsData.length > 0 && !selectedTeamId) {
+            setSelectedTeamId(teamsData[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
+      if (!selectedTeamId) {
+        setPlayers([]);
+        setPlayerSummaries([]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const [playersResponse, summariesResponse] = await Promise.all([
@@ -38,6 +65,8 @@ export default function PlayersPage() {
         }
       } catch (error) {
         console.error('Error fetching data:', error);
+        setPlayers([]);
+        setPlayerSummaries([]);
       } finally {
         setLoading(false);
       }
@@ -76,11 +105,14 @@ export default function PlayersPage() {
           <div>
             <label className="block text-sm font-medium mb-2">Select Team</label>
             <Select
-              value={selectedTeamId.toString()}
+              value={selectedTeamId?.toString() || ''}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTeamId(parseInt(e.target.value))}
             >
-              <option value="1">Eagles - 2024 Spring</option>
-              <option value="2">Lions - 2024 Spring</option>
+              {teams.map(team => (
+                <option key={team.id} value={team.id}>
+                  {team.name} - {team.season}
+                </option>
+              ))}
             </Select>
           </div>
           <div>

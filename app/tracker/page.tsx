@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -9,11 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { TapCounter } from '@/components/tracker/TapCounter';
 import { getScoreLabel } from '@/lib/definitions';
 import { formatPlayerNameWithNumber } from '@/lib/utils';
-import type { Player, TrackerState } from '@/lib/types';
+import type { Player, TrackerState, Team } from '@/lib/types';
 
 export default function TrackerPage() {
+  const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
-  const [selectedTeamId, setSelectedTeamId] = useState<number>(1); // Default to team 1
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [trackerState, setTrackerState] = useState<TrackerState>({
     selectedPlayerId: null,
     gameDate: new Date().toISOString().split('T')[0],
@@ -25,9 +27,35 @@ export default function TrackerPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  // Load teams
+  useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const response = await fetch('/api/teams');
+        if (response.ok) {
+          const teamsData = await response.json();
+          setTeams(teamsData);
+          if (teamsData.length > 0 && !selectedTeamId) {
+            setSelectedTeamId(teamsData[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
   // Load players for the team
   useEffect(() => {
     const fetchPlayers = async () => {
+      if (!selectedTeamId) {
+        setPlayers([]);
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const response = await fetch(`/api/players?teamId=${selectedTeamId}&active=true`);
@@ -37,14 +65,13 @@ export default function TrackerPage() {
         }
       } catch (error) {
         console.error('Error fetching players:', error);
+        setPlayers([]);
       } finally {
         setLoading(false);
       }
     };
 
-    if (selectedTeamId) {
-      fetchPlayers();
-    }
+    fetchPlayers();
   }, [selectedTeamId]);
 
   const getPlayerStats = (playerId: number) => {
@@ -196,6 +223,38 @@ export default function TrackerPage() {
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Live Game Tracker</h1>
           <p className="text-gray-600">Track player performance during the game</p>
         </div>
+
+        {/* Team Selector */}
+        {teams.length > 0 ? (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Select Team</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Select
+                value={selectedTeamId?.toString() || ''}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTeamId(parseInt(e.target.value))}
+              >
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} - {team.season}
+                  </option>
+                ))}
+              </Select>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card className="mb-6">
+            <CardContent className="text-center py-8">
+              <p className="text-gray-600 mb-4">No teams found. Create a team first to start tracking games.</p>
+              <Link href="/teams">
+                <Button className="bg-green-600 hover:bg-green-700">
+                  Create Your First Team
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Game Setup */}
         <Card className="mb-6">

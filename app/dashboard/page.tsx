@@ -1,22 +1,46 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { formatDate, formatPlayerName } from '@/lib/utils';
 import { getScoreLabel } from '@/lib/definitions';
-import type { TeamSeasonSummary, PlayerSeasonSummary, GameTrendData } from '@/lib/types';
+import type { TeamSeasonSummary, PlayerSeasonSummary, GameTrendData, Team } from '@/lib/types';
 
 export default function DashboardPage() {
-  const [selectedTeamId, setSelectedTeamId] = useState<number>(1);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [teamSummary, setTeamSummary] = useState<TeamSeasonSummary | null>(null);
   const [topPlayers, setTopPlayers] = useState<PlayerSeasonSummary[]>([]);
   const [trendData, setTrendData] = useState<GameTrendData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const fetchTeams = async () => {
+      try {
+        const response = await fetch('/api/teams');
+        if (response.ok) {
+          const teamsData = await response.json();
+          setTeams(teamsData);
+          if (teamsData.length > 0 && !selectedTeamId) {
+            setSelectedTeamId(teamsData[0].id);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching teams:', error);
+      }
+    };
+
+    fetchTeams();
+  }, []);
+
+  useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!selectedTeamId) return;
+
       try {
         setLoading(true);
         const response = await fetch(`/api/summary?teamId=${selectedTeamId}`);
@@ -28,14 +52,16 @@ export default function DashboardPage() {
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        // Set empty state on error
+        setTeamSummary(null);
+        setTopPlayers([]);
+        setTrendData([]);
       } finally {
         setLoading(false);
       }
     };
 
-    if (selectedTeamId) {
-      fetchDashboardData();
-    }
+    fetchDashboardData();
   }, [selectedTeamId]);
 
   if (loading) {
@@ -61,17 +87,44 @@ export default function DashboardPage() {
           <p className="text-gray-600 mt-2">Performance overview and player statistics</p>
         </div>
 
-        {/* Team Selector */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium mb-2">Select Team</label>
-          <Select
-            value={selectedTeamId.toString()}
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTeamId(parseInt(e.target.value))}
-          >
-            <option value="1">Eagles - 2024 Spring</option>
-            <option value="2">Lions - 2024 Spring</option>
-          </Select>
-        </div>
+        {/* No Teams State */}
+        {teams.length === 0 ? (
+          <Card className="mb-6">
+            <CardContent className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No teams found</h3>
+              <p className="text-gray-600 mb-6">
+                Create your first team to start tracking performance and viewing analytics
+              </p>
+              <Link href="/teams">
+                <Button className="bg-green-600 hover:bg-green-700">
+                  Create Your First Team
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Team Selector */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium mb-2">Select Team</label>
+              <Select
+                value={selectedTeamId?.toString() || ''}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTeamId(parseInt(e.target.value))}
+              >
+                {teams.map(team => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} - {team.season}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </>
+        )}
 
         {/* Summary Cards */}
         {teamSummary && (
@@ -250,6 +303,34 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Empty data state for selected team */}
+        {teams.length > 0 && selectedTeamId && !teamSummary && !loading && (
+          <Card className="mt-6">
+            <CardContent className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No data for this team yet</h3>
+              <p className="text-gray-600 mb-6">
+                Start by adding players to your team, then track some games to see analytics here
+              </p>
+              <div className="flex justify-center space-x-4">
+                <Link href="/players">
+                  <Button variant="outline">Add Players</Button>
+                </Link>
+                <Link href="/tracker">
+                  <Button className="bg-blue-600 hover:bg-blue-700">Start Tracking Games</Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        </>
+      )}
       </div>
     </div>
   );

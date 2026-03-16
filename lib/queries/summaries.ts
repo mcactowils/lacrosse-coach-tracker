@@ -9,33 +9,47 @@ export async function getTeamSeasonSummary(
   teamId: number,
   season?: string
 ): Promise<TeamSeasonSummary | null> {
-  const seasonCondition = season
-    ? sql`AND t.season = ${season}`
-    : sql``;
+  try {
+    // First check if team exists
+    const teamCheck = await sql`
+      SELECT id, name, season FROM teams WHERE id = ${teamId}
+    `;
 
-  const result = await sql`
-    SELECT
-      t.id as team_id,
-      t.name as team_name,
-      t.season,
-      COUNT(DISTINCT g.id) as total_games,
-      COUNT(DISTINCT p.id) as total_players,
-      COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_team_impact,
-      COALESCE(MAX(
-        (SELECT SUM(gs2.impact_score)
-         FROM game_stats gs2
-         WHERE gs2.game_id = g.id)
-      ), 0) as best_team_game,
-      COALESCE(MAX(gs.impact_score), 0) as best_individual_game
-    FROM teams t
-    LEFT JOIN games g ON t.id = g.team_id
-    LEFT JOIN players p ON t.id = p.team_id AND p.active = true
-    LEFT JOIN game_stats gs ON g.id = gs.game_id
-    WHERE t.id = ${teamId} ${seasonCondition}
-    GROUP BY t.id, t.name, t.season
-  `;
+    if (teamCheck.length === 0) {
+      return null;
+    }
 
-  return result[0] as TeamSeasonSummary || null;
+    const seasonCondition = season
+      ? sql`AND t.season = ${season}`
+      : sql``;
+
+    const result = await sql`
+      SELECT
+        t.id as team_id,
+        t.name as team_name,
+        t.season,
+        COUNT(DISTINCT g.id) as total_games,
+        COUNT(DISTINCT p.id) as total_players,
+        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_team_impact,
+        COALESCE(MAX(
+          (SELECT SUM(gs2.impact_score)
+           FROM game_stats gs2
+           WHERE gs2.game_id = g.id)
+        ), 0) as best_team_game,
+        COALESCE(MAX(gs.impact_score), 0) as best_individual_game
+      FROM teams t
+      LEFT JOIN games g ON t.id = g.team_id
+      LEFT JOIN players p ON t.id = p.team_id AND p.active = true
+      LEFT JOIN game_stats gs ON g.id = gs.game_id
+      WHERE t.id = ${teamId} ${seasonCondition}
+      GROUP BY t.id, t.name, t.season
+    `;
+
+    return result[0] as TeamSeasonSummary || null;
+  } catch (error) {
+    console.error('Error in getTeamSeasonSummary:', error);
+    return null;
+  }
 }
 
 export async function getAllTeamsSummary(season?: string): Promise<TeamSeasonSummary[]> {
@@ -73,9 +87,10 @@ export async function getTopPerformers(
   teamId?: number,
   limit: number = 10
 ): Promise<PlayerSeasonSummary[]> {
-  const teamCondition = teamId ? sql`AND p.team_id = ${teamId}` : sql``;
+  try {
+    const teamCondition = teamId ? sql`AND p.team_id = ${teamId}` : sql``;
 
-  const result = await sql`
+    const result = await sql`
     SELECT
       p.id as player_id,
       p.first_name || ' ' || p.last_name as player_name,
@@ -108,30 +123,39 @@ export async function getTopPerformers(
     LIMIT ${limit}
   `;
 
-  return result as PlayerSeasonSummary[];
+    return result as PlayerSeasonSummary[];
+  } catch (error) {
+    console.error('Error in getTopPerformers:', error);
+    return [];
+  }
 }
 
 export async function getTeamTrendData(
   teamId: number,
   limit: number = 10
 ): Promise<GameTrendData[]> {
-  const result = await sql`
-    SELECT
-      g.id as game_id,
-      g.game_date,
-      g.opponent,
-      gs.player_id,
-      p.first_name || ' ' || p.last_name as player_name,
-      gs.impact_score
-    FROM games g
-    JOIN game_stats gs ON g.id = gs.game_id
-    JOIN players p ON gs.player_id = p.id
-    WHERE g.team_id = ${teamId}
-    ORDER BY g.game_date ASC, gs.impact_score DESC
-    LIMIT ${limit * 5}
-  `;
+  try {
+    const result = await sql`
+      SELECT
+        g.id as game_id,
+        g.game_date,
+        g.opponent,
+        gs.player_id,
+        p.first_name || ' ' || p.last_name as player_name,
+        gs.impact_score
+      FROM games g
+      JOIN game_stats gs ON g.id = gs.game_id
+      JOIN players p ON gs.player_id = p.id
+      WHERE g.team_id = ${teamId}
+      ORDER BY g.game_date ASC, gs.impact_score DESC
+      LIMIT ${limit * 5}
+    `;
 
-  return result as GameTrendData[];
+    return result as GameTrendData[];
+  } catch (error) {
+    console.error('Error in getTeamTrendData:', error);
+    return [];
+  }
 }
 
 export async function getSeasonStats(season?: string) {
