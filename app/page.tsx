@@ -17,6 +17,11 @@ export default function HomePage() {
             Track player performance with our 3-number impact system
           </p>
           <div className="flex justify-center space-x-4">
+            <Link href="/teams">
+              <Button size="lg" className="bg-green-600 hover:bg-green-700">
+                Create Your First Team
+              </Button>
+            </Link>
             <Link href="/tracker">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
                 Start Tracking
@@ -31,7 +36,23 @@ export default function HomePage() {
         </div>
 
         {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-orange-600">🏆 Team Setup</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                Create and manage your teams and seasons to get started
+              </p>
+              <Link href="/teams" className="block mt-4">
+                <Button variant="outline" className="w-full">
+                  Manage Teams →
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
           <Card className="text-center">
             <CardHeader>
               <CardTitle className="text-blue-600">📱 Live Tracking</CardTitle>
