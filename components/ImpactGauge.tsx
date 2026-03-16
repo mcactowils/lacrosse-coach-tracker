@@ -1,9 +1,9 @@
 'use client';
 
-import { type SeasonSummary } from '@/lib/db';
+import { type TeamSeasonSummary } from '@/lib/types';
 
 interface ImpactGaugeProps {
-  summary: SeasonSummary | null;
+  summary: TeamSeasonSummary | null;
 }
 
 export default function ImpactGauge({ summary }: ImpactGaugeProps) {
@@ -18,8 +18,8 @@ export default function ImpactGauge({ summary }: ImpactGaugeProps) {
     );
   }
 
-  // Calculate performance level based on average impact score
-  const avgScore = summary.avg_impact_score;
+  // Calculate performance level based on average team impact
+  const avgScore = summary.avg_team_impact;
   let performance: { level: string; color: string; percentage: number } = {
     level: 'Excellent',
     color: 'text-green-600',
@@ -42,7 +42,7 @@ export default function ImpactGauge({ summary }: ImpactGaugeProps) {
         <div className={`text-3xl font-bold ${performance.color} mb-2`}>
           {avgScore}
         </div>
-        <div className="text-sm text-gray-600">Average Impact Score</div>
+        <div className="text-sm text-gray-600">Average Team Impact</div>
       </div>
 
       {/* Visual gauge */}
@@ -78,18 +78,14 @@ export default function ImpactGauge({ summary }: ImpactGaugeProps) {
       </div>
 
       <div className="mt-4 pt-4 border-t border-gray-200">
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-2 gap-4 text-center">
           <div>
-            <div className="text-lg font-semibold text-gray-900">{summary.avg_ground_balls}</div>
-            <div className="text-xs text-gray-500">Avg Ground Balls</div>
+            <div className="text-lg font-semibold text-gray-900">{summary.total_games}</div>
+            <div className="text-xs text-gray-500">Games Played</div>
           </div>
           <div>
-            <div className="text-lg font-semibold text-gray-900">{summary.avg_screens}</div>
-            <div className="text-xs text-gray-500">Avg Screens</div>
-          </div>
-          <div>
-            <div className="text-lg font-semibold text-gray-900">{summary.avg_effort_plays}</div>
-            <div className="text-xs text-gray-500">Avg Effort Plays</div>
+            <div className="text-lg font-semibold text-gray-900">{summary.total_players}</div>
+            <div className="text-xs text-gray-500">Active Players</div>
           </div>
         </div>
       </div>

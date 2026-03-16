@@ -1,9 +1,9 @@
 'use client';
 
-import { type SeasonSummary } from '@/lib/db';
+import { type TeamSeasonSummary } from '@/lib/types';
 
 interface SummaryCardsProps {
-  summary: SeasonSummary | null;
+  summary: TeamSeasonSummary | null;
 }
 
 export default function SummaryCards({ summary }: SummaryCardsProps) {
@@ -28,21 +28,21 @@ export default function SummaryCards({ summary }: SummaryCardsProps) {
       color: 'bg-blue-50 text-blue-700',
     },
     {
-      title: 'Avg Impact Score',
-      value: summary.avg_impact_score,
-      subtitle: 'per game',
+      title: 'Total Players',
+      value: summary.total_players,
+      subtitle: 'active roster',
       color: 'bg-green-50 text-green-700',
     },
     {
-      title: 'Total Impact',
-      value: summary.total_impact_score,
-      subtitle: 'season total',
+      title: 'Avg Team Impact',
+      value: summary.avg_team_impact,
+      subtitle: 'per player per game',
       color: 'bg-purple-50 text-purple-700',
     },
     {
-      title: 'Best Game',
-      value: summary.best_game_impact,
-      subtitle: summary.best_game_opponent ? `vs ${summary.best_game_opponent}` : '',
+      title: 'Best Individual Game',
+      value: summary.best_individual_game,
+      subtitle: 'season high impact',
       color: 'bg-orange-50 text-orange-700',
     },
   ];

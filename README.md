@@ -1,143 +1,216 @@
-# Lacrosse Coach Tracker
+# Lacrosse Coach Tracker - Multi-Player Architecture
 
-A modern Next.js application for tracking lacrosse game statistics and performance metrics.
+A scalable Next.js application for tracking lacrosse player performance using a 3-number impact system.
 
-## Features
+## 🏗️ **Architecture Overview**
 
-- **Game Tracking**: Record ground balls, screens, and effort plays for each game
-- **Impact Score**: Automatic calculation of impact score (ground_balls + screens + effort_plays)
-- **Dashboard Analytics**:
-  - Season summary cards
-  - Visual impact performance gauge
-  - Recent games table with color-coded scores
-  - Performance trend chart
-- **Mobile Responsive**: Optimized for all device sizes
-- **Real-time Updates**: Dashboard refreshes automatically after adding new games
+### **Multi-Player Domain Model**
+- **Teams**: Manage multiple teams with seasons
+- **Players**: Individual roster management with jersey numbers
+- **Games**: Track games against opponents with locations
+- **Game Stats**: Individual player performance per game
 
-## Tech Stack
+### **3-Number Impact System**
+- **Ground Balls (GB)**: Target 3-5 per game
+- **Screens (SC)**: Target 4-6 per game
+- **Effort Plays (EP)**: Target 3+ per game
+- **Impact Score**: GB + SC + EP (Auto-calculated)
 
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Database**: Neon PostgreSQL with @neondatabase/serverless
-- **Deployment**: Vercel-ready
+### **Performance Labels**
+- **Excellent**: 10+ impact score
+- **Strong**: 7-9 impact score
+- **Solid**: 5-6 impact score
+- **Developing**: <5 impact score
 
-## Getting Started
+## 🚀 **Features**
 
-### Prerequisites
+### **📱 Live Game Tracker** (`/tracker`)
+- Mobile-first touch interface
+- Player selection with jersey numbers
+- Tap counters for each stat type
+- Real-time impact score calculation
+- Undo functionality and game reset
+- Save complete game with all player stats
 
-- Node.js 18+
-- A Neon database account
+### **📊 Team Dashboard** (`/dashboard`)
+- Season summary cards
+- Top performer leaderboards
+- Team performance trends
+- Recent game summaries
+- Visual analytics with color coding
 
-### Installation
+### **👥 Player Management** (`/players`)
+- Player roster cards with stats
+- Individual player profiles (`/players/[id]`)
+- Progress tracking against targets
+- Season averages and trends
+- Game-by-game performance history
 
-1. Clone the repository:
-```bash
-git clone <your-repo-url>
-cd lacrosse-coach-tracker
-```
+### **🎯 Player Detail Pages**
+- Season statistics breakdown
+- Progress bars against canonical targets
+- Performance trend charts
+- Recent game history
+- Notes and observations
 
-2. Install dependencies:
-```bash
-npm install
-```
+## 🔧 **Technical Stack**
 
-3. Set up your environment variables:
-```bash
-cp .env.example .env.local
-```
+### **Frontend**
+- **Next.js 14** with App Router
+- **TypeScript** for type safety
+- **Tailwind CSS** with shadcn-style components
+- **Responsive design** (mobile-first)
 
-4. Update `.env.local` with your Neon database URL:
-```env
-DATABASE_URL="postgresql://username:password@hostname/database?sslmode=require"
-```
+### **Backend**
+- **Neon PostgreSQL** with computed columns
+- **@neondatabase/serverless** for edge compatibility
+- **REST API** with comprehensive validation
+- **Modular query architecture**
 
-5. Run the database schema:
+### **Database Schema**
 ```sql
--- Execute the contents of schema.sql in your Neon database console
+teams (id, name, season, created_at)
+players (id, team_id, first_name, last_name, jersey_number, active)
+games (id, team_id, game_date, opponent, location)
+game_stats (id, game_id, player_id, ground_balls, screens, effort_plays, impact_score, notes)
 ```
 
-6. Start the development server:
+## 🛠️ **Setup Instructions**
+
+### **Prerequisites**
+- Node.js 18+
+- Neon database account
+
+### **Installation**
+```bash
+# Install dependencies
+npm install
+
+# Database is already configured with sample data:
+# - 2 teams (Eagles, Lions)
+# - 6 players with jersey numbers
+# - 4 games with 14 player performances
+```
+
+### **Environment**
+Your `.env.local` is configured with:
+```env
+DATABASE_URL="postgresql://neondb_owner:npg_61QucVHzmyTB@ep-round-bread-a4o46i06-pooler.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require"
+```
+
+### **Development**
 ```bash
 npm run dev
+# Open http://localhost:3000
 ```
 
-7. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Database Schema
-
-The application uses a single `games` table with the following structure:
-
-- `id`: Primary key
-- `game_date`: Date of the game
-- `opponent`: Name of the opposing team
-- `ground_balls`: Number of ground balls recovered
-- `screens`: Number of screens set
-- `effort_plays`: Number of effort plays made
-- `impact_score`: Computed field (ground_balls + screens + effort_plays)
-- `created_at` / `updated_at`: Timestamps
-
-## API Endpoints
-
-- `GET /api/games` - Retrieve all games
-- `POST /api/games` - Create a new game
-- `GET /api/summary` - Get season summary and trend data
-
-## Project Structure
-
-```
-├── app/
-│   ├── api/
-│   │   ├── games/route.ts
-│   │   └── summary/route.ts
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
-├── components/
-│   ├── GameForm.tsx
-│   ├── GamesTable.tsx
-│   ├── ImpactGauge.tsx
-│   ├── SummaryCards.tsx
-│   └── TrendChart.tsx
-├── lib/
-│   └── db.ts
-├── schema.sql
-└── package.json
-```
-
-## Performance Scoring
-
-The impact score is calculated as: `ground_balls + screens + effort_plays`
-
-Performance levels:
-- **Excellent**: 12+ average impact score
-- **Good**: 8-11 average impact score
-- **Fair**: 5-7 average impact score
-- **Needs Work**: <5 average impact score
-
-## Deployment
-
-This application is optimized for Vercel deployment:
-
-1. Connect your repository to Vercel
-2. Add your `DATABASE_URL` environment variable
-3. Deploy
-
-## Development
-
+### **Production Build**
 ```bash
-# Run development server
-npm run dev
-
-# Build for production
 npm run build
-
-# Start production server
 npm start
-
-# Type checking
-npm run typecheck
-
-# Linting
-npm run lint
 ```
+
+## 📁 **Project Structure**
+
+```
+app/
+├── page.tsx                    # Landing page with system explanation
+├── dashboard/page.tsx          # Team analytics dashboard
+├── players/page.tsx            # Player roster management
+├── players/[playerId]/page.tsx # Individual player profiles
+├── tracker/page.tsx            # Live game tracking interface
+└── api/                        # REST API routes
+    ├── players/route.ts        # Player CRUD
+    ├── games/route.ts          # Game management
+    ├── tracker/route.ts        # Live tracking save/update
+    └── summary/route.ts        # Analytics queries
+
+components/
+├── ui/                         # Base shadcn-style components
+│   ├── button.tsx
+│   ├── card.tsx
+│   ├── input.tsx
+│   ├── select.tsx
+│   └── badge.tsx
+└── tracker/
+    └── TapCounter.tsx          # Mobile-optimized tap interface
+
+lib/
+├── definitions.ts              # Canonical stat definitions & targets
+├── types.ts                    # TypeScript interfaces
+├── utils.ts                    # Utility functions
+├── db.ts                       # Database connection
+└── queries/                    # Modular query layers
+    ├── players.ts
+    ├── games.ts
+    └── summaries.ts
+
+scripts/
+└── schema.sql                  # Complete database schema
+```
+
+## 🎯 **Usage Workflow**
+
+### **1. Game Day Tracking**
+1. Navigate to `/tracker`
+2. Set game date, opponent, location
+3. Select player to track
+4. Use tap counters during the game
+5. Save complete game stats
+
+### **2. Performance Review**
+1. View team dashboard at `/dashboard`
+2. Review individual players at `/players`
+3. Analyze trends and progress against targets
+4. Plan coaching adjustments
+
+### **3. Season Management**
+1. Add/manage players in `/players`
+2. Review season summaries
+3. Track improvement over time
+4. Export data for external analysis
+
+## 🚀 **Deployment**
+
+### **Vercel (Recommended)**
+```bash
+# Connect repository to Vercel
+# Add DATABASE_URL environment variable
+# Deploy
+```
+
+### **Environment Variables**
+```env
+DATABASE_URL=your_neon_database_url
+```
+
+## 🔮 **Future Enhancements**
+
+- **Authentication**: Coach/parent login system
+- **Multi-team support**: League management
+- **Advanced analytics**: Heat maps, comparisons
+- **Mobile app**: Native iOS/Android
+- **Parent portal**: Read-only access for families
+- **Export features**: PDF reports, CSV data
+- **Real-time updates**: Live game broadcasting
+
+## 📊 **Sample Data**
+
+The application comes pre-populated with:
+- **Eagles & Lions teams** (2024 Spring season)
+- **6 players** with realistic jersey numbers
+- **4 completed games** with comprehensive stats
+- **14 individual performances** showing various skill levels
+
+## 🎖️ **Production Ready**
+
+- ✅ **Type-safe** throughout with TypeScript
+- ✅ **Error handling** and input validation
+- ✅ **Mobile responsive** design
+- ✅ **Performance optimized** queries
+- ✅ **Scalable architecture** for growth
+- ✅ **Clean abstractions** for maintainability
+
+---
+
+Ready to track your team's impact! 🥍

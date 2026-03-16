@@ -1,6 +1,6 @@
 'use client';
 
-import { type Game } from '@/lib/db';
+import { type Game } from '@/lib/types';
 
 interface GamesTableProps {
   games: Game[];
