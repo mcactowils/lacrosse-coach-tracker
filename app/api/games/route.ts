@@ -1,9 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, type GameInput } from '@/lib/db';
+import {
+  getAllGames,
+  getGamesByTeam,
+  createGame,
+  getGamesWithFilters
+} from '@/lib/queries/games';
+import type { CreateGameInput, GameFilters } from '@/lib/types';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const games = await db.getRecentGames(50);
+    const { searchParams } = new URL(request.url);
+    const teamId = searchParams.get('teamId');
+    const limit = searchParams.get('limit');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const opponent = searchParams.get('opponent');
+
+    // If we have filters other than just teamId and limit, use the filtered query
+    if (startDate || endDate || opponent) {
+      const filters: GameFilters = {};
+
+      if (teamId) {
+        filters.teamId = parseInt(teamId);
+      }
+
+      if (startDate) {
+        filters.startDate = startDate;
+      }
+
+      if (endDate) {
+        filters.endDate = endDate;
+      }
+
+      if (opponent) {
+        filters.opponent = opponent;
+      }
+
+      const games = await getGamesWithFilters(filters);
+      return NextResponse.json(games);
+    }
+
+    // If teamId is specified, use team-specific query
+    if (teamId) {
+      const limitNum = limit ? parseInt(limit) : undefined;
+      const games = await getGamesByTeam(parseInt(teamId), limitNum);
+      return NextResponse.json(games);
+    }
+
+    // Default to all games
+    const games = await getAllGames();
     return NextResponse.json(games);
   } catch (error) {
     console.error('Error fetching games:', error);
@@ -19,9 +64,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // Validate required fields
-    const requiredFields = ['game_date', 'opponent', 'ground_balls', 'screens', 'effort_plays'];
+    const requiredFields = ['team_id', 'game_date', 'opponent'];
     const missingFields = requiredFields.filter(field =>
-      body[field] === undefined || body[field] === null
+      body[field] === undefined || body[field] === null || body[field] === ''
     );
 
     if (missingFields.length > 0) {
@@ -31,24 +76,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate data types
-    if (typeof body.opponent !== 'string' || body.opponent.trim() === '') {
+    // Validate team_id is a number
+    const teamId = parseInt(body.team_id);
+    if (isNaN(teamId)) {
       return NextResponse.json(
-        { error: 'Opponent must be a non-empty string' },
+        { error: 'team_id must be a valid number' },
         { status: 400 }
       );
     }
 
-    const numericFields = ['ground_balls', 'screens', 'effort_plays'];
-    for (const field of numericFields) {
-      const value = parseInt(body[field]);
-      if (isNaN(value) || value < 0) {
-        return NextResponse.json(
-          { error: `${field} must be a non-negative number` },
-          { status: 400 }
-        );
-      }
-      body[field] = value;
+    // Validate opponent is a string
+    if (typeof body.opponent !== 'string' || body.opponent.trim() === '') {
+      return NextResponse.json(
+        { error: 'opponent must be a non-empty string' },
+        { status: 400 }
+      );
     }
 
     // Validate date format
@@ -60,15 +102,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const gameData: GameInput = {
+    // Validate date is valid
+    const gameDate = new Date(body.game_date);
+    if (isNaN(gameDate.getTime())) {
+      return NextResponse.json(
+        { error: 'game_date must be a valid date' },
+        { status: 400 }
+      );
+    }
+
+    const gameData: CreateGameInput = {
+      team_id: teamId,
       game_date: body.game_date,
       opponent: body.opponent.trim(),
-      ground_balls: body.ground_balls,
-      screens: body.screens,
-      effort_plays: body.effort_plays,
+      location: body.location ? body.location.trim() : undefined,
     };
 
-    const newGame = await db.createGame(gameData);
+    const newGame = await createGame(gameData);
     return NextResponse.json(newGame, { status: 201 });
   } catch (error) {
     console.error('Error creating game:', error);

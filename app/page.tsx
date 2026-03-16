@@ -1,85 +1,156 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import GameForm from '@/components/GameForm';
-import SummaryCards from '@/components/SummaryCards';
-import ImpactGauge from '@/components/ImpactGauge';
-import GamesTable from '@/components/GamesTable';
-import TrendChart from '@/components/TrendChart';
-import { type Game, type SeasonSummary } from '@/lib/db';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 export default function HomePage() {
-  const [games, setGames] = useState<Game[]>([]);
-  const [summary, setSummary] = useState<SeasonSummary | null>(null);
-  const [trend, setTrend] = useState<Array<{ game_date: string; impact_score: number; opponent: string }>>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchData = async () => {
-    try {
-      const [gamesResponse, summaryResponse] = await Promise.all([
-        fetch('/api/games'),
-        fetch('/api/summary')
-      ]);
-
-      if (!gamesResponse.ok || !summaryResponse.ok) {
-        throw new Error('Failed to fetch data');
-      }
-
-      const gamesData = await gamesResponse.json();
-      const summaryData = await summaryResponse.json();
-
-      setGames(gamesData);
-      setSummary(summaryData.summary);
-      setTrend(summaryData.trend);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const handleGameAdded = () => {
-    fetchData();
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-4xl mx-auto px-4 py-12">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Lacrosse Coach Tracker</h1>
-          <p className="mt-2 text-gray-600">Track performance metrics and analyze game statistics</p>
+        <div className="text-center mb-12">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            Lacrosse Coach Tracker
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Track player performance with our 3-number impact system
+          </p>
+          <div className="flex justify-center space-x-4">
+            <Link href="/tracker">
+              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+                Start Tracking
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="outline" size="lg">
+                View Dashboard
+              </Button>
+            </Link>
+          </div>
         </div>
 
-        {/* Game Form */}
-        <div className="mb-8">
-          <GameForm onGameAdded={handleGameAdded} />
+        {/* Feature Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-blue-600">📱 Live Tracking</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                Real-time game tracking with tap counters for Ground Balls, Screens, and Effort Plays
+              </p>
+              <Link href="/tracker" className="block mt-4">
+                <Button variant="outline" className="w-full">
+                  Start Tracking →
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-green-600">📊 Team Dashboard</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                Comprehensive analytics, team performance trends, and player leaderboards
+              </p>
+              <Link href="/dashboard" className="block mt-4">
+                <Button variant="outline" className="w-full">
+                  View Dashboard →
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-purple-600">👥 Player Management</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                Individual player profiles with detailed statistics and progress tracking
+              </p>
+              <Link href="/players" className="block mt-4">
+                <Button variant="outline" className="w-full">
+                  Manage Players →
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* Summary Cards */}
-        <div className="mb-8">
-          <SummaryCards summary={summary} />
-        </div>
+        {/* Impact System Explanation */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>3-Number Impact System</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
+                  GB
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Ground Balls</h3>
+                <p className="text-sm text-gray-600">
+                  Gaining possession of loose balls during live play
+                </p>
+                <p className="text-xs text-blue-600 mt-1">Target: 3-5 per game</p>
+              </div>
 
-        {/* Impact Gauge and Trend Chart */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <ImpactGauge summary={summary} />
-          <TrendChart trend={trend} />
-        </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
+                  SC
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Screens</h3>
+                <p className="text-sm text-gray-600">
+                  Setting body position to create space for teammates
+                </p>
+                <p className="text-xs text-green-600 mt-1">Target: 4-6 per game</p>
+              </div>
 
-        {/* Games Table */}
-        <div className="mb-8">
-          <GamesTable games={games} loading={loading} />
-        </div>
+              <div className="text-center">
+                <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
+                  EP
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Effort Plays</h3>
+                <p className="text-sm text-gray-600">
+                  High-energy actions that help the team succeed
+                </p>
+                <p className="text-xs text-purple-600 mt-1">Target: 3+ per game</p>
+              </div>
+            </div>
 
-        {/* Footer */}
-        <footer className="text-center text-gray-500 text-sm">
-          <p>© 2024 Lacrosse Coach Tracker. Built with Next.js and Tailwind CSS.</p>
-        </footer>
+            <div className="text-center mt-6 p-4 bg-gray-50 rounded-lg">
+              <p className="text-sm text-gray-600">
+                <strong>Impact Score = GB + SC + EP</strong>
+              </p>
+              <div className="flex justify-center space-x-6 mt-2 text-xs">
+                <span className="bg-green-100 text-green-700 px-2 py-1 rounded">10+: Excellent</span>
+                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded">7-9: Strong</span>
+                <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded">5-6: Solid</span>
+                <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded">&lt;5: Developing</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Navigation */}
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">Ready to get started?</p>
+          <div className="flex flex-wrap justify-center gap-4">
+            <Link href="/tracker">
+              <Button variant="outline">Live Game Tracker</Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="outline">Team Dashboard</Button>
+            </Link>
+            <Link href="/players">
+              <Button variant="outline">Player Management</Button>
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
