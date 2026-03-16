@@ -1,0 +1,78 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --card: #ffffff;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --accent: #ecfeff;
+  --good: #16a34a;
+  --warn: #f59e0b;
+  --bad: #dc2626;
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.container-shell {
+  @apply mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  @apply rounded-2xl shadow-sm;
+}
+
+.input {
+  @apply w-full rounded-xl border px-3 py-2 outline-none transition;
+  border-color: var(--border);
+  background: white;
+}
+
+.input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-xl px-4 py-2 font-medium transition;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.btn-primary:hover {
+  filter: brightness(0.96);
+}
+
+.badge {
+  @apply inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium;
+}
+
+.badge-good {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-bad {
+  background: #fee2e2;
+  color: #991b1b;
+}
