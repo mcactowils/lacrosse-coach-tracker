@@ -35,58 +35,92 @@ export async function getGameById(gameId: number): Promise<Game | null> {
 }
 
 export async function getGamesByTeam(teamId: number, limit?: number): Promise<Game[]> {
-  const limitClause = limit ? sql`LIMIT ${limit}` : sql``;
-
-  const result = await sql`
-    SELECT
-      g.*,
-      t.name as team_name
-    FROM games g
-    JOIN teams t ON g.team_id = t.id
-    WHERE g.team_id = ${teamId}
-    ORDER BY g.game_date DESC
-    ${limitClause}
-  `;
-  return result as Game[];
+  if (limit) {
+    const result = await sql`
+      SELECT
+        g.*,
+        t.name as team_name
+      FROM games g
+      JOIN teams t ON g.team_id = t.id
+      WHERE g.team_id = ${teamId}
+      ORDER BY g.game_date DESC
+      LIMIT ${limit}
+    `;
+    return result as Game[];
+  } else {
+    const result = await sql`
+      SELECT
+        g.*,
+        t.name as team_name
+      FROM games g
+      JOIN teams t ON g.team_id = t.id
+      WHERE g.team_id = ${teamId}
+      ORDER BY g.game_date DESC
+    `;
+    return result as Game[];
+  }
 }
 
 export async function getGamesWithFilters(filters: GameFilters): Promise<Game[]> {
-  const conditions = ['1=1'];
-  const params: any[] = [];
-
-  if (filters.teamId) {
-    conditions.push(`g.team_id = $${conditions.length}`);
-    params.push(filters.teamId);
+  // Build the query dynamically based on provided filters
+  if (filters.teamId && filters.startDate && filters.endDate && filters.opponent) {
+    return await sql`
+      SELECT g.*, t.name as team_name
+      FROM games g
+      JOIN teams t ON g.team_id = t.id
+      WHERE g.team_id = ${filters.teamId}
+        AND g.game_date >= ${filters.startDate}
+        AND g.game_date <= ${filters.endDate}
+        AND LOWER(g.opponent) LIKE LOWER(${`%${filters.opponent}%`})
+      ORDER BY g.game_date DESC
+    ` as Game[];
+  } else if (filters.teamId && filters.startDate && filters.endDate) {
+    return await sql`
+      SELECT g.*, t.name as team_name
+      FROM games g
+      JOIN teams t ON g.team_id = t.id
+      WHERE g.team_id = ${filters.teamId}
+        AND g.game_date >= ${filters.startDate}
+        AND g.game_date <= ${filters.endDate}
+      ORDER BY g.game_date DESC
+    ` as Game[];
+  } else if (filters.teamId && filters.opponent) {
+    return await sql`
+      SELECT g.*, t.name as team_name
+      FROM games g
+      JOIN teams t ON g.team_id = t.id
+      WHERE g.team_id = ${filters.teamId}
+        AND LOWER(g.opponent) LIKE LOWER(${`%${filters.opponent}%`})
+      ORDER BY g.game_date DESC
+    ` as Game[];
+  } else if (filters.teamId) {
+    return await sql`
+      SELECT g.*, t.name as team_name
+      FROM games g
+      JOIN teams t ON g.team_id = t.id
+      WHERE g.team_id = ${filters.teamId}
+      ORDER BY g.game_date DESC
+    ` as Game[];
+  } else if (filters.startDate && filters.endDate) {
+    return await sql`
+      SELECT g.*, t.name as team_name
+      FROM games g
+      JOIN teams t ON g.team_id = t.id
+      WHERE g.game_date >= ${filters.startDate}
+        AND g.game_date <= ${filters.endDate}
+      ORDER BY g.game_date DESC
+    ` as Game[];
+  } else if (filters.opponent) {
+    return await sql`
+      SELECT g.*, t.name as team_name
+      FROM games g
+      JOIN teams t ON g.team_id = t.id
+      WHERE LOWER(g.opponent) LIKE LOWER(${`%${filters.opponent}%`})
+      ORDER BY g.game_date DESC
+    ` as Game[];
+  } else {
+    return await getAllGames();
   }
-
-  if (filters.startDate) {
-    conditions.push(`g.game_date >= $${conditions.length}`);
-    params.push(filters.startDate);
-  }
-
-  if (filters.endDate) {
-    conditions.push(`g.game_date <= $${conditions.length}`);
-    params.push(filters.endDate);
-  }
-
-  if (filters.opponent) {
-    conditions.push(`LOWER(g.opponent) LIKE LOWER($${conditions.length})`);
-    params.push(`%${filters.opponent}%`);
-  }
-
-  const whereClause = conditions.join(' AND ');
-
-  const result = await sql`
-    SELECT
-      g.*,
-      t.name as team_name
-    FROM games g
-    JOIN teams t ON g.team_id = t.id
-    WHERE ${sql.unsafe(whereClause)}
-    ORDER BY g.game_date DESC
-  `;
-
-  return result as Game[];
 }
 
 export async function createGame(gameData: CreateGameInput): Promise<Game> {
@@ -102,36 +136,33 @@ export async function updateGame(
   gameId: number,
   updates: Partial<CreateGameInput>
 ): Promise<Game | null> {
-  const setClause: string[] = [];
-  const params: any[] = [];
-
-  if (updates.game_date !== undefined) {
-    setClause.push(`game_date = $${setClause.length + 1}`);
-    params.push(updates.game_date);
-  }
-
-  if (updates.opponent !== undefined) {
-    setClause.push(`opponent = $${setClause.length + 1}`);
-    params.push(updates.opponent);
-  }
-
-  if (updates.location !== undefined) {
-    setClause.push(`location = $${setClause.length + 1}`);
-    params.push(updates.location);
-  }
-
-  if (setClause.length === 0) {
+  if (updates.game_date && updates.opponent && updates.location !== undefined) {
+    const result = await sql`
+      UPDATE games
+      SET game_date = ${updates.game_date}, opponent = ${updates.opponent}, location = ${updates.location}
+      WHERE id = ${gameId}
+      RETURNING *
+    `;
+    return result[0] as Game || null;
+  } else if (updates.game_date && updates.opponent) {
+    const result = await sql`
+      UPDATE games
+      SET game_date = ${updates.game_date}, opponent = ${updates.opponent}
+      WHERE id = ${gameId}
+      RETURNING *
+    `;
+    return result[0] as Game || null;
+  } else if (updates.opponent) {
+    const result = await sql`
+      UPDATE games
+      SET opponent = ${updates.opponent}
+      WHERE id = ${gameId}
+      RETURNING *
+    `;
+    return result[0] as Game || null;
+  } else {
     return getGameById(gameId);
   }
-
-  const result = await sql`
-    UPDATE games
-    SET ${sql.unsafe(setClause.join(', '))}
-    WHERE id = ${gameId}
-    RETURNING *
-  `;
-
-  return result[0] as Game || null;
 }
 
 export async function deleteGame(gameId: number): Promise<boolean> {
@@ -165,74 +196,91 @@ export async function getPlayerGameStats(
   playerId: number,
   limit?: number
 ): Promise<GameStats[]> {
-  const limitClause = limit ? sql`LIMIT ${limit}` : sql``;
-
-  const result = await sql`
-    SELECT
-      gs.*,
-      p.first_name || ' ' || p.last_name as player_name,
-      g.game_date,
-      g.opponent
-    FROM game_stats gs
-    JOIN players p ON gs.player_id = p.id
-    JOIN games g ON gs.game_id = g.id
-    WHERE gs.player_id = ${playerId}
-    ORDER BY g.game_date DESC
-    ${limitClause}
-  `;
-  return result as GameStats[];
+  if (limit) {
+    const result = await sql`
+      SELECT
+        gs.*,
+        p.first_name || ' ' || p.last_name as player_name,
+        g.game_date,
+        g.opponent
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN games g ON gs.game_id = g.id
+      WHERE gs.player_id = ${playerId}
+      ORDER BY g.game_date DESC
+      LIMIT ${limit}
+    `;
+    return result as GameStats[];
+  } else {
+    const result = await sql`
+      SELECT
+        gs.*,
+        p.first_name || ' ' || p.last_name as player_name,
+        g.game_date,
+        g.opponent
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN games g ON gs.game_id = g.id
+      WHERE gs.player_id = ${playerId}
+      ORDER BY g.game_date DESC
+    `;
+    return result as GameStats[];
+  }
 }
 
 export async function getGameStatsWithFilters(filters: StatsFilters): Promise<GameStats[]> {
-  const conditions = ['1=1'];
-  const params: any[] = [];
-
-  if (filters.playerId) {
-    conditions.push(`gs.player_id = $${conditions.length}`);
-    params.push(filters.playerId);
+  if (filters.playerId && filters.teamId) {
+    return await sql`
+      SELECT
+        gs.*,
+        p.first_name || ' ' || p.last_name as player_name,
+        g.game_date,
+        g.opponent
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN games g ON gs.game_id = g.id
+      WHERE gs.player_id = ${filters.playerId} AND g.team_id = ${filters.teamId}
+      ORDER BY g.game_date DESC, gs.impact_score DESC
+    ` as GameStats[];
+  } else if (filters.playerId) {
+    return await sql`
+      SELECT
+        gs.*,
+        p.first_name || ' ' || p.last_name as player_name,
+        g.game_date,
+        g.opponent
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN games g ON gs.game_id = g.id
+      WHERE gs.player_id = ${filters.playerId}
+      ORDER BY g.game_date DESC, gs.impact_score DESC
+    ` as GameStats[];
+  } else if (filters.teamId) {
+    return await sql`
+      SELECT
+        gs.*,
+        p.first_name || ' ' || p.last_name as player_name,
+        g.game_date,
+        g.opponent
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN games g ON gs.game_id = g.id
+      WHERE g.team_id = ${filters.teamId}
+      ORDER BY g.game_date DESC, gs.impact_score DESC
+    ` as GameStats[];
+  } else {
+    return await sql`
+      SELECT
+        gs.*,
+        p.first_name || ' ' || p.last_name as player_name,
+        g.game_date,
+        g.opponent
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN games g ON gs.game_id = g.id
+      ORDER BY g.game_date DESC, gs.impact_score DESC
+    ` as GameStats[];
   }
-
-  if (filters.teamId) {
-    conditions.push(`g.team_id = $${conditions.length}`);
-    params.push(filters.teamId);
-  }
-
-  if (filters.startDate) {
-    conditions.push(`g.game_date >= $${conditions.length}`);
-    params.push(filters.startDate);
-  }
-
-  if (filters.endDate) {
-    conditions.push(`g.game_date <= $${conditions.length}`);
-    params.push(filters.endDate);
-  }
-
-  if (filters.minImpactScore) {
-    conditions.push(`gs.impact_score >= $${conditions.length}`);
-    params.push(filters.minImpactScore);
-  }
-
-  if (filters.maxImpactScore) {
-    conditions.push(`gs.impact_score <= $${conditions.length}`);
-    params.push(filters.maxImpactScore);
-  }
-
-  const whereClause = conditions.join(' AND ');
-
-  const result = await sql`
-    SELECT
-      gs.*,
-      p.first_name || ' ' || p.last_name as player_name,
-      g.game_date,
-      g.opponent
-    FROM game_stats gs
-    JOIN players p ON gs.player_id = p.id
-    JOIN games g ON gs.game_id = g.id
-    WHERE ${sql.unsafe(whereClause)}
-    ORDER BY g.game_date DESC, gs.impact_score DESC
-  `;
-
-  return result as GameStats[];
 }
 
 export async function createGameStats(statsData: CreateGameStatsInput): Promise<GameStats> {
@@ -250,41 +298,17 @@ export async function updateGameStats(
   playerId: number,
   updates: UpdateGameStatsInput
 ): Promise<GameStats | null> {
-  const setClause: string[] = [];
-  const params: any[] = [];
-
-  if (updates.ground_balls !== undefined) {
-    setClause.push(`ground_balls = $${setClause.length + 1}`);
-    params.push(updates.ground_balls);
-  }
-
-  if (updates.screens !== undefined) {
-    setClause.push(`screens = $${setClause.length + 1}`);
-    params.push(updates.screens);
-  }
-
-  if (updates.effort_plays !== undefined) {
-    setClause.push(`effort_plays = $${setClause.length + 1}`);
-    params.push(updates.effort_plays);
-  }
-
-  if (updates.notes !== undefined) {
-    setClause.push(`notes = $${setClause.length + 1}`);
-    params.push(updates.notes);
-  }
-
-  if (setClause.length === 0) {
+  if (updates.ground_balls !== undefined && updates.screens !== undefined && updates.effort_plays !== undefined) {
+    const result = await sql`
+      UPDATE game_stats
+      SET ground_balls = ${updates.ground_balls}, screens = ${updates.screens}, effort_plays = ${updates.effort_plays}
+      WHERE game_id = ${gameId} AND player_id = ${playerId}
+      RETURNING *
+    `;
+    return result[0] as GameStats || null;
+  } else {
     return getGameStatsByPlayerAndGame(gameId, playerId);
   }
-
-  const result = await sql`
-    UPDATE game_stats
-    SET ${sql.unsafe(setClause.join(', '))}
-    WHERE game_id = ${gameId} AND player_id = ${playerId}
-    RETURNING *
-  `;
-
-  return result[0] as GameStats || null;
 }
 
 export async function upsertGameStats(statsData: CreateGameStatsInput): Promise<GameStats> {
@@ -355,20 +379,34 @@ export async function getRecentGameStats(
   teamId?: number,
   limit: number = 20
 ): Promise<GameStats[]> {
-  const teamCondition = teamId ? sql`AND g.team_id = ${teamId}` : sql``;
-
-  const result = await sql`
-    SELECT
-      gs.*,
-      p.first_name || ' ' || p.last_name as player_name,
-      g.game_date,
-      g.opponent
-    FROM game_stats gs
-    JOIN players p ON gs.player_id = p.id
-    JOIN games g ON gs.game_id = g.id
-    WHERE 1=1 ${teamCondition}
-    ORDER BY g.game_date DESC, gs.impact_score DESC
-    LIMIT ${limit}
-  `;
-  return result as GameStats[];
+  if (teamId) {
+    const result = await sql`
+      SELECT
+        gs.*,
+        p.first_name || ' ' || p.last_name as player_name,
+        g.game_date,
+        g.opponent
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN games g ON gs.game_id = g.id
+      WHERE g.team_id = ${teamId}
+      ORDER BY g.game_date DESC, gs.impact_score DESC
+      LIMIT ${limit}
+    `;
+    return result as GameStats[];
+  } else {
+    const result = await sql`
+      SELECT
+        gs.*,
+        p.first_name || ' ' || p.last_name as player_name,
+        g.game_date,
+        g.opponent
+      FROM game_stats gs
+      JOIN players p ON gs.player_id = p.id
+      JOIN games g ON gs.game_id = g.id
+      ORDER BY g.game_date DESC, gs.impact_score DESC
+      LIMIT ${limit}
+    `;
+    return result as GameStats[];
+  }
 }

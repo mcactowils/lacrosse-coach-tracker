@@ -48,54 +48,86 @@ export async function getPlayerById(playerId: number): Promise<Player | null> {
 }
 
 export async function getPlayersWithFilters(filters: PlayerFilters): Promise<Player[]> {
-  let query = sql`
-    SELECT
-      p.*,
-      p.first_name || ' ' || p.last_name as full_name,
-      t.name as team_name
-    FROM players p
-    JOIN teams t ON p.team_id = t.id
-    WHERE 1=1
-  `;
-
-  const conditions = [];
-  const params: any[] = [];
-
-  if (filters.teamId) {
-    conditions.push(`p.team_id = $${conditions.length + 1}`);
-    params.push(filters.teamId);
-  }
-
-  if (filters.active !== undefined) {
-    conditions.push(`p.active = $${conditions.length + 1}`);
-    params.push(filters.active);
-  }
-
-  if (filters.search) {
-    conditions.push(`(
-      LOWER(p.first_name) LIKE LOWER($${conditions.length + 1}) OR
-      LOWER(p.last_name) LIKE LOWER($${conditions.length + 1}) OR
-      CAST(p.jersey_number AS TEXT) LIKE $${conditions.length + 1}
-    )`);
-    params.push(`%${filters.search}%`);
-  }
-
-  if (conditions.length > 0) {
-    const whereClause = ' AND ' + conditions.join(' AND ');
-    query = sql`
+  if (filters.teamId && filters.search && filters.active !== undefined) {
+    const result = await sql`
       SELECT
         p.*,
         p.first_name || ' ' || p.last_name as full_name,
         t.name as team_name
       FROM players p
       JOIN teams t ON p.team_id = t.id
-      WHERE 1=1 ${sql.unsafe(whereClause)}
+      WHERE p.team_id = ${filters.teamId}
+        AND p.active = ${filters.active}
+        AND (
+          LOWER(p.first_name) LIKE LOWER(${`%${filters.search}%`}) OR
+          LOWER(p.last_name) LIKE LOWER(${`%${filters.search}%`}) OR
+          CAST(p.jersey_number AS TEXT) LIKE ${`%${filters.search}%`}
+        )
       ORDER BY p.last_name, p.first_name
     `;
+    return result as Player[];
+  } else if (filters.teamId && filters.active !== undefined) {
+    const result = await sql`
+      SELECT
+        p.*,
+        p.first_name || ' ' || p.last_name as full_name,
+        t.name as team_name
+      FROM players p
+      JOIN teams t ON p.team_id = t.id
+      WHERE p.team_id = ${filters.teamId} AND p.active = ${filters.active}
+      ORDER BY p.last_name, p.first_name
+    `;
+    return result as Player[];
+  } else if (filters.teamId && filters.search) {
+    const result = await sql`
+      SELECT
+        p.*,
+        p.first_name || ' ' || p.last_name as full_name,
+        t.name as team_name
+      FROM players p
+      JOIN teams t ON p.team_id = t.id
+      WHERE p.team_id = ${filters.teamId}
+        AND (
+          LOWER(p.first_name) LIKE LOWER(${`%${filters.search}%`}) OR
+          LOWER(p.last_name) LIKE LOWER(${`%${filters.search}%`}) OR
+          CAST(p.jersey_number AS TEXT) LIKE ${`%${filters.search}%`}
+        )
+      ORDER BY p.last_name, p.first_name
+    `;
+    return result as Player[];
+  } else if (filters.teamId) {
+    return getPlayersByTeam(filters.teamId);
+  } else if (filters.search) {
+    const result = await sql`
+      SELECT
+        p.*,
+        p.first_name || ' ' || p.last_name as full_name,
+        t.name as team_name
+      FROM players p
+      JOIN teams t ON p.team_id = t.id
+      WHERE (
+        LOWER(p.first_name) LIKE LOWER(${`%${filters.search}%`}) OR
+        LOWER(p.last_name) LIKE LOWER(${`%${filters.search}%`}) OR
+        CAST(p.jersey_number AS TEXT) LIKE ${`%${filters.search}%`}
+      )
+      ORDER BY p.last_name, p.first_name
+    `;
+    return result as Player[];
+  } else if (filters.active !== undefined) {
+    const result = await sql`
+      SELECT
+        p.*,
+        p.first_name || ' ' || p.last_name as full_name,
+        t.name as team_name
+      FROM players p
+      JOIN teams t ON p.team_id = t.id
+      WHERE p.active = ${filters.active}
+      ORDER BY p.last_name, p.first_name
+    `;
+    return result as Player[];
+  } else {
+    return getAllPlayers();
   }
-
-  const result = await query;
-  return result as Player[];
 }
 
 export async function createPlayer(playerData: CreatePlayerInput): Promise<Player> {
@@ -112,41 +144,58 @@ export async function updatePlayer(
   playerId: number,
   updates: Partial<CreatePlayerInput>
 ): Promise<Player | null> {
-  const setClause: string[] = [];
-  const params: any[] = [];
-
-  if (updates.first_name !== undefined) {
-    setClause.push(`first_name = $${setClause.length + 1}`);
-    params.push(updates.first_name);
-  }
-
-  if (updates.last_name !== undefined) {
-    setClause.push(`last_name = $${setClause.length + 1}`);
-    params.push(updates.last_name);
-  }
-
-  if (updates.jersey_number !== undefined) {
-    setClause.push(`jersey_number = $${setClause.length + 1}`);
-    params.push(updates.jersey_number);
-  }
-
-  if (updates.active !== undefined) {
-    setClause.push(`active = $${setClause.length + 1}`);
-    params.push(updates.active);
-  }
-
-  if (setClause.length === 0) {
+  if (updates.first_name && updates.last_name && updates.jersey_number !== undefined && updates.active !== undefined) {
+    const result = await sql`
+      UPDATE players
+      SET first_name = ${updates.first_name}, last_name = ${updates.last_name},
+          jersey_number = ${updates.jersey_number}, active = ${updates.active}
+      WHERE id = ${playerId}
+      RETURNING *
+    `;
+    return result[0] as Player || null;
+  } else if (updates.first_name && updates.last_name) {
+    const result = await sql`
+      UPDATE players
+      SET first_name = ${updates.first_name}, last_name = ${updates.last_name}
+      WHERE id = ${playerId}
+      RETURNING *
+    `;
+    return result[0] as Player || null;
+  } else if (updates.first_name) {
+    const result = await sql`
+      UPDATE players
+      SET first_name = ${updates.first_name}
+      WHERE id = ${playerId}
+      RETURNING *
+    `;
+    return result[0] as Player || null;
+  } else if (updates.last_name) {
+    const result = await sql`
+      UPDATE players
+      SET last_name = ${updates.last_name}
+      WHERE id = ${playerId}
+      RETURNING *
+    `;
+    return result[0] as Player || null;
+  } else if (updates.jersey_number !== undefined) {
+    const result = await sql`
+      UPDATE players
+      SET jersey_number = ${updates.jersey_number}
+      WHERE id = ${playerId}
+      RETURNING *
+    `;
+    return result[0] as Player || null;
+  } else if (updates.active !== undefined) {
+    const result = await sql`
+      UPDATE players
+      SET active = ${updates.active}
+      WHERE id = ${playerId}
+      RETURNING *
+    `;
+    return result[0] as Player || null;
+  } else {
     return getPlayerById(playerId);
   }
-
-  const result = await sql`
-    UPDATE players
-    SET ${sql.unsafe(setClause.join(', '))}
-    WHERE id = ${playerId}
-    RETURNING *
-  `;
-
-  return result[0] as Player || null;
 }
 
 export async function deletePlayer(playerId: number): Promise<boolean> {

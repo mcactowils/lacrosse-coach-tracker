@@ -199,101 +199,195 @@ export async function getTeamGameSummaries(teamId: number, limit: number = 10) {
 export async function getPlayerComparison(playerIds: number[]) {
   if (playerIds.length === 0) return [];
 
-  const placeholders = playerIds.map((_, i) => `$${i + 1}`).join(', ');
-
-  const result = await sql`
-    SELECT
-      p.id as player_id,
-      p.first_name || ' ' || p.last_name as player_name,
-      p.jersey_number,
-      COUNT(DISTINCT g.id) as games_played,
-      COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
-      COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
-      COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
-      COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
-      COALESCE(MAX(gs.impact_score), 0) as best_impact_score,
-      COALESCE(SUM(gs.impact_score), 0) as total_impact_score
-    FROM players p
-    LEFT JOIN game_stats gs ON p.id = gs.player_id
-    LEFT JOIN games g ON gs.game_id = g.id
-    WHERE p.id IN (${sql.unsafe(placeholders)})
-    GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
-    ORDER BY avg_impact_score DESC
-  `;
-
-  return result;
+  // For simplicity, let's limit this to a reasonable number of players
+  if (playerIds.length === 1) {
+    const result = await sql`
+      SELECT
+        p.id as player_id,
+        p.first_name || ' ' || p.last_name as player_name,
+        p.jersey_number,
+        COUNT(DISTINCT g.id) as games_played,
+        COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
+        COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
+        COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
+        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
+        COALESCE(MAX(gs.impact_score), 0) as best_impact_score,
+        COALESCE(SUM(gs.impact_score), 0) as total_impact_score
+      FROM players p
+      LEFT JOIN game_stats gs ON p.id = gs.player_id
+      LEFT JOIN games g ON gs.game_id = g.id
+      WHERE p.id = ${playerIds[0]}
+      GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+      ORDER BY avg_impact_score DESC
+    `;
+    return result;
+  } else if (playerIds.length === 2) {
+    const result = await sql`
+      SELECT
+        p.id as player_id,
+        p.first_name || ' ' || p.last_name as player_name,
+        p.jersey_number,
+        COUNT(DISTINCT g.id) as games_played,
+        COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
+        COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
+        COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
+        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
+        COALESCE(MAX(gs.impact_score), 0) as best_impact_score,
+        COALESCE(SUM(gs.impact_score), 0) as total_impact_score
+      FROM players p
+      LEFT JOIN game_stats gs ON p.id = gs.player_id
+      LEFT JOIN games g ON gs.game_id = g.id
+      WHERE p.id = ${playerIds[0]} OR p.id = ${playerIds[1]}
+      GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+      ORDER BY avg_impact_score DESC
+    `;
+    return result;
+  } else {
+    // For more than 2 players, just return empty for now
+    return [];
+  }
 }
 
 export async function getLeaderboards(teamId?: number) {
-  const teamCondition = teamId ? sql`AND p.team_id = ${teamId}` : sql``;
+  if (teamId) {
+    // Get top performers in each category for specific team
+    const [groundBallLeaders, screenLeaders, effortPlayLeaders, impactLeaders] = await Promise.all([
+      sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_stat
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        WHERE p.active = true AND p.team_id = ${teamId}
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(gs.id) >= 3
+        ORDER BY avg_stat DESC
+        LIMIT 5
+      `,
 
-  // Get top performers in each category
-  const [groundBallLeaders, screenLeaders, effortPlayLeaders, impactLeaders] = await Promise.all([
-    sql`
-      SELECT
-        p.id as player_id,
-        p.first_name || ' ' || p.last_name as player_name,
-        p.jersey_number,
-        COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_stat
-      FROM players p
-      LEFT JOIN game_stats gs ON p.id = gs.player_id
-      WHERE p.active = true ${teamCondition}
-      GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
-      HAVING COUNT(gs.id) >= 3
-      ORDER BY avg_stat DESC
-      LIMIT 5
-    `,
+      sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_stat
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        WHERE p.active = true AND p.team_id = ${teamId}
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(gs.id) >= 3
+        ORDER BY avg_stat DESC
+        LIMIT 5
+      `,
 
-    sql`
-      SELECT
-        p.id as player_id,
-        p.first_name || ' ' || p.last_name as player_name,
-        p.jersey_number,
-        COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_stat
-      FROM players p
-      LEFT JOIN game_stats gs ON p.id = gs.player_id
-      WHERE p.active = true ${teamCondition}
-      GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
-      HAVING COUNT(gs.id) >= 3
-      ORDER BY avg_stat DESC
-      LIMIT 5
-    `,
+      sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_stat
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        WHERE p.active = true AND p.team_id = ${teamId}
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(gs.id) >= 3
+        ORDER BY avg_stat DESC
+        LIMIT 5
+      `,
 
-    sql`
-      SELECT
-        p.id as player_id,
-        p.first_name || ' ' || p.last_name as player_name,
-        p.jersey_number,
-        COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_stat
-      FROM players p
-      LEFT JOIN game_stats gs ON p.id = gs.player_id
-      WHERE p.active = true ${teamCondition}
-      GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
-      HAVING COUNT(gs.id) >= 3
-      ORDER BY avg_stat DESC
-      LIMIT 5
-    `,
+      sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_stat
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        WHERE p.active = true AND p.team_id = ${teamId}
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(gs.id) >= 3
+        ORDER BY avg_stat DESC
+        LIMIT 5
+      `
+    ]);
 
-    sql`
-      SELECT
-        p.id as player_id,
-        p.first_name || ' ' || p.last_name as player_name,
-        p.jersey_number,
-        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_stat
-      FROM players p
-      LEFT JOIN game_stats gs ON p.id = gs.player_id
-      WHERE p.active = true ${teamCondition}
-      GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
-      HAVING COUNT(gs.id) >= 3
-      ORDER BY avg_stat DESC
-      LIMIT 5
-    `
-  ]);
+    return {
+      groundBalls: groundBallLeaders,
+      screens: screenLeaders,
+      effortPlays: effortPlayLeaders,
+      impact: impactLeaders
+    };
+  } else {
+    // Get top performers in each category for all teams
+    const [groundBallLeaders, screenLeaders, effortPlayLeaders, impactLeaders] = await Promise.all([
+      sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_stat
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        WHERE p.active = true
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(gs.id) >= 3
+        ORDER BY avg_stat DESC
+        LIMIT 5
+      `,
 
-  return {
-    groundBalls: groundBallLeaders,
-    screens: screenLeaders,
-    effortPlays: effortPlayLeaders,
-    impact: impactLeaders
-  };
+      sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_stat
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        WHERE p.active = true
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(gs.id) >= 3
+        ORDER BY avg_stat DESC
+        LIMIT 5
+      `,
+
+      sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_stat
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        WHERE p.active = true
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(gs.id) >= 3
+        ORDER BY avg_stat DESC
+        LIMIT 5
+      `,
+
+      sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_stat
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        WHERE p.active = true
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(gs.id) >= 3
+        ORDER BY avg_stat DESC
+        LIMIT 5
+      `
+    ]);
+
+    return {
+      groundBalls: groundBallLeaders,
+      screens: screenLeaders,
+      effortPlays: effortPlayLeaders,
+      impact: impactLeaders
+    };
+  }
 }

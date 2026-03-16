@@ -240,7 +240,7 @@ export default function TrackerPage() {
           <CardContent>
             <Select
               value={trackerState.selectedPlayerId?.toString() || ''}
-              onChange={(e) => setTrackerState(prev => ({
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setTrackerState(prev => ({
                 ...prev,
                 selectedPlayerId: e.target.value ? parseInt(e.target.value) : null
               }))}

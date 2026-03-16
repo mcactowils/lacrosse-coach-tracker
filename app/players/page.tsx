@@ -77,7 +77,7 @@ export default function PlayersPage() {
             <label className="block text-sm font-medium mb-2">Select Team</label>
             <Select
               value={selectedTeamId.toString()}
-              onChange={(e) => setSelectedTeamId(parseInt(e.target.value))}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTeamId(parseInt(e.target.value))}
             >
               <option value="1">Eagles - 2024 Spring</option>
               <option value="2">Lions - 2024 Spring</option>
