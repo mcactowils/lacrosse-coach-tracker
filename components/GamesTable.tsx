@@ -1,6 +1,7 @@
 'use client';
 
 import { type Game } from '@/lib/types';
+import { formatDate } from '@/lib/utils';
 
 interface GamesTableProps {
   games: Game[];
@@ -31,19 +32,11 @@ export default function GamesTable({ games, loading }: GamesTableProps) {
       <div className="bg-white rounded-lg shadow-md p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Games</h3>
         <div className="text-center py-8 text-gray-500">
-          No games recorded yet. Add your first game above!
+          No games recorded yet. Start tracking your first game!
         </div>
       </div>
     );
   }
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  };
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -60,16 +53,10 @@ export default function GamesTable({ games, loading }: GamesTableProps) {
                 Opponent
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Ground Balls
+                Location
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Screens
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Effort Plays
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Impact Score
+                Team
               </th>
             </tr>
           </thead>
@@ -83,23 +70,10 @@ export default function GamesTable({ games, loading }: GamesTableProps) {
                   {game.opponent}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {game.ground_balls}
+                  {game.location || 'TBD'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {game.screens}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {game.effort_plays}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                    game.impact_score >= 12 ? 'bg-green-100 text-green-800' :
-                    game.impact_score >= 8 ? 'bg-blue-100 text-blue-800' :
-                    game.impact_score >= 5 ? 'bg-yellow-100 text-yellow-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {game.impact_score}
-                  </span>
+                  {game.team_name || 'Team'}
                 </td>
               </tr>
             ))}
