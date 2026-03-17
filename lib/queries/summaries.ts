@@ -219,15 +219,21 @@ export async function getTeamTrendData(
         g.id as game_id,
         g.game_date,
         g.opponent,
-        gs.player_id,
-        p.first_name || ' ' || p.last_name as player_name,
-        gs.impact_score
+        COALESCE(SUM(gs.impact_score), 0) as impact_score,
+        (
+          SELECT p.first_name || ' ' || p.last_name
+          FROM game_stats gs2
+          JOIN players p ON gs2.player_id = p.id
+          WHERE gs2.game_id = g.id
+          ORDER BY gs2.impact_score DESC
+          LIMIT 1
+        ) as player_name
       FROM games g
-      JOIN game_stats gs ON g.id = gs.game_id
-      JOIN players p ON gs.player_id = p.id
+      LEFT JOIN game_stats gs ON g.id = gs.game_id
       WHERE g.team_id = ${teamId}
-      ORDER BY g.game_date ASC, gs.impact_score DESC
-      LIMIT ${limit * 5}
+      GROUP BY g.id, g.game_date, g.opponent
+      ORDER BY g.game_date ASC
+      LIMIT ${limit}
     `;
 
     return result as GameTrendData[];

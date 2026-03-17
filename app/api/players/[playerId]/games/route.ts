@@ -25,8 +25,7 @@ export async function GET(
         gs.*,
         g.game_date,
         g.opponent,
-        g.location,
-        (gs.ground_balls + gs.screens + gs.effort_plays) as impact_score
+        g.location
       FROM game_stats gs
       JOIN games g ON gs.game_id = g.id
       WHERE gs.player_id = ${playerId}

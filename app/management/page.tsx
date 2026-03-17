@@ -11,7 +11,7 @@ import { getScoreLabel } from '@/lib/definitions';
 import type { Team, Player, PlayerSeasonSummary, TeamSeasonSummary, GameTrendData } from '@/lib/types';
 
 export default function ManagementPage() {
-  const [activeTab, setActiveTab] = useState<'overview' | 'teams' | 'players'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'players'>('overview');
 
   // Teams state
   const [teams, setTeams] = useState<Team[]>([]);
@@ -19,14 +19,16 @@ export default function ManagementPage() {
   const [showCreateTeamForm, setShowCreateTeamForm] = useState(false);
   const [newTeam, setNewTeam] = useState({ name: '', season: '' });
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
-  const [showRoster, setShowRoster] = useState<number | null>(null);
-  const [rosterData, setRosterData] = useState<Player[]>([]);
 
   // Players state
   const [players, setPlayers] = useState<Player[]>([]);
   const [showCreatePlayerForm, setShowCreatePlayerForm] = useState(false);
   const [newPlayer, setNewPlayer] = useState({ first_name: '', last_name: '', jersey_number: '' });
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPlayerId, setSelectedPlayerId] = useState<number | null>(null);
+  const [playerDetails, setPlayerDetails] = useState<any>(null);
+  const [playerSummary, setPlayerSummary] = useState<any>(null);
+  const [playerGames, setPlayerGames] = useState<any[]>([]);
 
   // Dashboard state
   const [teamSummary, setTeamSummary] = useState<TeamSeasonSummary | null>(null);
@@ -98,16 +100,28 @@ export default function ManagementPage() {
     }
   };
 
-  const fetchRoster = async (teamId: number) => {
+  const fetchPlayerDetails = async (playerId: number) => {
     try {
-      const response = await fetch(`/api/players?teamId=${teamId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setRosterData(data);
-        setShowRoster(teamId);
+      const [playerResponse, summaryResponse, gamesResponse] = await Promise.all([
+        fetch(`/api/players/${playerId}`),
+        fetch(`/api/players/${playerId}/summary`),
+        fetch(`/api/players/${playerId}/games?limit=10`)
+      ]);
+
+      if (playerResponse.ok && summaryResponse.ok && gamesResponse.ok) {
+        const [playerData, summaryData, gamesData] = await Promise.all([
+          playerResponse.json(),
+          summaryResponse.json(),
+          gamesResponse.json()
+        ]);
+
+        setPlayerDetails(playerData);
+        setPlayerSummary(summaryData);
+        setPlayerGames(gamesData);
+        setSelectedPlayerId(playerId);
       }
     } catch (error) {
-      console.error('Error fetching roster:', error);
+      console.error('Error fetching player details:', error);
     }
   };
 
@@ -120,8 +134,11 @@ export default function ManagementPage() {
 
     setCreating(true);
     try {
-      const response = await fetch('/api/teams', {
-        method: 'POST',
+      const url = editingTeam ? `/api/teams/${editingTeam.id}` : '/api/teams';
+      const method = editingTeam ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTeam),
       });
@@ -129,13 +146,14 @@ export default function ManagementPage() {
       if (response.ok) {
         setNewTeam({ name: '', season: '' });
         setShowCreateTeamForm(false);
+        setEditingTeam(null);
         fetchTeams();
       } else {
-        alert('Failed to create team');
+        alert(`Failed to ${editingTeam ? 'update' : 'create'} team`);
       }
     } catch (error) {
-      console.error('Error creating team:', error);
-      alert('Error creating team');
+      console.error(`Error ${editingTeam ? 'updating' : 'creating'} team:`, error);
+      alert(`Error ${editingTeam ? 'updating' : 'creating'} team`);
     } finally {
       setCreating(false);
     }
@@ -188,7 +206,7 @@ export default function ManagementPage() {
            player.jersey_number?.toString().includes(searchTerm);
   });
 
-  const renderTabButton = (tab: 'overview' | 'teams' | 'players', label: string) => (
+  const renderTabButton = (tab: 'overview' | 'players', label: string) => (
     <button
       onClick={() => setActiveTab(tab)}
       className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -243,6 +261,20 @@ export default function ManagementPage() {
             >
               New Team
             </Button>
+            {selectedTeamId && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const team = teams.find(t => t.id === selectedTeamId);
+                  if (team) {
+                    setEditingTeam(team);
+                    setNewTeam({ name: team.name, season: team.season });
+                  }
+                }}
+              >
+                Edit Team
+              </Button>
+            )}
           </div>
         </div>
 
@@ -250,7 +282,6 @@ export default function ManagementPage() {
         <div className="mb-6">
           <div className="flex space-x-2">
             {renderTabButton('overview', 'Overview')}
-            {renderTabButton('teams', 'Teams')}
             {renderTabButton('players', 'Players')}
           </div>
         </div>
@@ -396,44 +427,6 @@ export default function ManagementPage() {
           </div>
         )}
 
-        {activeTab === 'teams' && (
-          <div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {teams.map((team) => (
-                <Card key={team.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <CardTitle className="text-lg">{team.name}</CardTitle>
-                        <p className="text-sm text-gray-500 mt-1">{team.season} Season</p>
-                      </div>
-                      <Badge variant="secondary">Team #{team.id}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex justify-between items-center">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => fetchRoster(team.id)}
-                      >
-                        View Roster
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingTeam(team)}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
         {activeTab === 'players' && (
           <div>
             {selectedTeamId ? (
@@ -454,32 +447,194 @@ export default function ManagementPage() {
                   </Button>
                 </div>
 
-                {/* Players Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredPlayers.map((player) => (
-                    <Card key={player.id} className="hover:shadow-lg transition-shadow">
-                      <CardHeader className="pb-3">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <CardTitle className="text-lg">
-                              {formatPlayerNameWithNumber(player.first_name, player.last_name, player.jersey_number)}
+                {/* Players Grid and Details */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Players List */}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-4">Team Roster</h3>
+                    <div className="space-y-3">
+                      {filteredPlayers.map((player) => (
+                        <Card
+                          key={player.id}
+                          className={`hover:shadow-lg transition-shadow cursor-pointer ${
+                            selectedPlayerId === player.id ? 'ring-2 ring-blue-500' : ''
+                          }`}
+                          onClick={() => fetchPlayerDetails(player.id)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="font-medium">
+                                  {formatPlayerNameWithNumber(player.first_name, player.last_name, player.jersey_number)}
+                                </p>
+                                <p className="text-sm text-gray-500">{player.team_name}</p>
+                              </div>
+                              <Badge variant={player.active ? "default" : "secondary"}>
+                                {player.active ? "Active" : "Inactive"}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Player Details */}
+                  <div>
+                    {selectedPlayerId && playerDetails && playerSummary ? (
+                      <div className="space-y-6">
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>
+                              {formatPlayerNameWithNumber(playerDetails.first_name, playerDetails.last_name, playerDetails.jersey_number)}
                             </CardTitle>
-                            <p className="text-sm text-gray-500 mt-1">{player.team_name}</p>
-                          </div>
-                          <Badge variant={player.active ? "default" : "secondary"}>
-                            {player.active ? "Active" : "Inactive"}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <Link href={`/players/${player.id}`}>
-                          <Button variant="outline" size="sm" className="w-full">
-                            View Details
-                          </Button>
-                        </Link>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <p className="text-sm text-gray-500">Games Played</p>
+                                <p className="font-semibold">{playerSummary.games_played}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500">Avg Impact Score</p>
+                                <div className="flex items-center space-x-2">
+                                  <p className="font-semibold">{playerSummary.avg_impact_score}</p>
+                                  <Badge className={`${getScoreLabel(playerSummary.avg_impact_score).bgColor} ${getScoreLabel(playerSummary.avg_impact_score).color}`}>
+                                    {getScoreLabel(playerSummary.avg_impact_score).label}
+                                  </Badge>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500">Best Game</p>
+                                <p className="font-semibold">{playerSummary.best_impact_score}</p>
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-500">Total Impact</p>
+                                <p className="font-semibold">{playerSummary.total_impact_score}</p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Season Averages</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div>
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="font-medium">Ground Balls</span>
+                                  <span className="text-lg font-bold">{playerSummary.avg_ground_balls}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.min(100, (playerSummary.avg_ground_balls / 5) * 100)}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="font-medium">Screens</span>
+                                  <span className="text-lg font-bold">{playerSummary.avg_screens}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-green-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.min(100, (playerSummary.avg_screens / 6) * 100)}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="flex justify-between items-center mb-2">
+                                  <span className="font-medium">Effort Plays</span>
+                                  <span className="text-lg font-bold">{playerSummary.avg_effort_plays}</span>
+                                </div>
+                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                  <div
+                                    className="bg-purple-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${Math.min(100, (playerSummary.avg_effort_plays / 3) * 100)}%` }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Performance Trend</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            {playerGames.length > 0 ? (
+                              <div className="h-48 flex items-end justify-between space-x-1">
+                                {playerGames.slice(-8).map((game, index) => {
+                                  const maxScore = Math.max(...playerGames.map(g => g.impact_score));
+                                  const height = maxScore > 0 ? (game.impact_score / maxScore) * 100 : 0;
+                                  const scoreLabel = getScoreLabel(game.impact_score);
+
+                                  return (
+                                    <div key={game.id} className="flex-1 flex flex-col items-center">
+                                      <div
+                                        className={`w-full rounded-t-sm ${scoreLabel.bgColor.replace('bg-', 'bg-').replace('100', '500')} transition-all duration-500`}
+                                        style={{ height: `${height}%`, minHeight: '8px' }}
+                                        title={`${game.opponent}: ${game.impact_score} (${formatDate(game.game_date || '')})`}
+                                      ></div>
+                                      <p className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-left">
+                                        {game.opponent?.slice(0, 3)}
+                                      </p>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <div className="h-48 flex items-center justify-center text-gray-500">
+                                No game data available
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        <Card>
+                          <CardHeader>
+                            <CardTitle>Recent Games</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3">
+                              {playerGames.slice(0, 5).map((game) => {
+                                const scoreLabel = getScoreLabel(game.impact_score);
+                                return (
+                                  <div key={game.id} className="flex justify-between items-center p-3 border rounded-lg">
+                                    <div>
+                                      <p className="font-medium">{game.opponent}</p>
+                                      <p className="text-sm text-gray-500">{formatDate(game.game_date || '')}</p>
+                                    </div>
+                                    <div className="text-right">
+                                      <Badge className={`${scoreLabel.bgColor} ${scoreLabel.color}`}>
+                                        {game.impact_score}
+                                      </Badge>
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        GB: {game.ground_balls} SC: {game.screens} EP: {game.effort_plays}
+                                      </p>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    ) : (
+                      <Card className="h-full">
+                        <CardContent className="flex items-center justify-center h-64">
+                          <p className="text-gray-500">Select a player to view details</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 </div>
 
                 {filteredPlayers.length === 0 && (
@@ -503,12 +658,12 @@ export default function ManagementPage() {
           </div>
         )}
 
-        {/* Create Team Modal */}
-        {showCreateTeamForm && (
+        {/* Create/Edit Team Modal */}
+        {(showCreateTeamForm || editingTeam) && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <Card className="w-full max-w-md">
               <CardHeader>
-                <CardTitle>Create New Team</CardTitle>
+                <CardTitle>{editingTeam ? 'Edit Team' : 'Create New Team'}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreateTeam} className="space-y-4">
@@ -526,12 +681,16 @@ export default function ManagementPage() {
                   />
                   <div className="flex space-x-2">
                     <Button type="submit" disabled={creating} className="flex-1">
-                      {creating ? 'Creating...' : 'Create'}
+                      {creating ? (editingTeam ? 'Updating...' : 'Creating...') : (editingTeam ? 'Update' : 'Create')}
                     </Button>
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setShowCreateTeamForm(false)}
+                      onClick={() => {
+                        setShowCreateTeamForm(false);
+                        setEditingTeam(null);
+                        setNewTeam({ name: '', season: '' });
+                      }}
                       className="flex-1"
                     >
                       Cancel
@@ -589,46 +748,6 @@ export default function ManagementPage() {
           </div>
         )}
 
-        {/* Roster Modal */}
-        {showRoster && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <Card className="w-full max-w-2xl max-h-[80vh] overflow-hidden">
-              <CardHeader>
-                <CardTitle>Team Roster</CardTitle>
-              </CardHeader>
-              <CardContent className="overflow-y-auto">
-                <div className="space-y-3">
-                  {rosterData.map((player) => (
-                    <div key={player.id} className="flex justify-between items-center p-3 border rounded-lg">
-                      <div>
-                        <p className="font-medium">
-                          {formatPlayerNameWithNumber(player.first_name, player.last_name, player.jersey_number)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {player.active ? 'Active' : 'Inactive'}
-                        </p>
-                      </div>
-                      <Link href={`/players/${player.id}`}>
-                        <Button variant="outline" size="sm">
-                          View
-                        </Button>
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6">
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowRoster(null)}
-                    className="w-full"
-                  >
-                    Close
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   );
