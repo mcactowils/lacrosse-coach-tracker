@@ -83,26 +83,50 @@ export async function GET(request: NextRequest) {
 
         const teamIdNum = parseInt(teamId);
 
-        const [
-          teamSummary,
-          topPlayers,
-          trendData,
-          recentGames,
-          leaderboards
-        ] = await Promise.all([
-          getTeamSeasonSummary(teamIdNum, season || undefined),
-          getTopPerformers(teamIdNum, 5),
-          getTeamTrendData(teamIdNum, 10),
-          getTeamGameSummaries(teamIdNum, 5),
-          getLeaderboards(teamIdNum)
-        ]);
+        // Get data step by step with error handling
+        let teamSummary, topPlayers, trendData, recentGames, leaderboards;
+
+        try {
+          teamSummary = await getTeamSeasonSummary(teamIdNum, season || undefined);
+        } catch (error) {
+          console.error('Error getting team summary:', error);
+          teamSummary = null;
+        }
+
+        try {
+          topPlayers = await getTopPerformers(teamIdNum, 5);
+        } catch (error) {
+          console.error('Error getting top performers:', error);
+          topPlayers = [];
+        }
+
+        try {
+          trendData = await getTeamTrendData(teamIdNum, 10);
+        } catch (error) {
+          console.error('Error getting trend data:', error);
+          trendData = [];
+        }
+
+        try {
+          recentGames = await getTeamGameSummaries(teamIdNum, 5);
+        } catch (error) {
+          console.error('Error getting recent games:', error);
+          recentGames = [];
+        }
+
+        try {
+          leaderboards = await getLeaderboards(teamIdNum);
+        } catch (error) {
+          console.error('Error getting leaderboards:', error);
+          leaderboards = {};
+        }
 
         return NextResponse.json({
           team: teamSummary,
-          topPlayers,
-          trend: trendData,
-          recentGames,
-          leaderboards
+          topPlayers: topPlayers || [],
+          trend: trendData || [],
+          recentGames: recentGames || [],
+          leaderboards: leaderboards || {}
         });
       }
     }

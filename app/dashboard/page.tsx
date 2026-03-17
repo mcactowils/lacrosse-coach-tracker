@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { formatDate, formatPlayerName } from '@/lib/utils';
 import { getScoreLabel } from '@/lib/definitions';
@@ -43,14 +42,23 @@ export default function DashboardPage() {
 
       try {
         setLoading(true);
+        console.log('Fetching dashboard data for team:', selectedTeamId);
         const response = await fetch(`/api/summary?teamId=${selectedTeamId}`);
+        console.log('Dashboard API response status:', response.status);
+
         if (response.ok) {
           const data = await response.json();
+          console.log('Dashboard API data:', data);
           setTeamSummary(data.team);
           setTopPlayers(data.topPlayers || []);
           setTrendData(data.trend || []);
         } else {
-          console.error('Dashboard API Error:', response.status, await response.text());
+          const errorText = await response.text();
+          console.error('Dashboard API Error:', response.status, errorText);
+          // Set empty state on API error to show the fallback UI
+          setTeamSummary(null);
+          setTopPlayers([]);
+          setTrendData([]);
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -114,7 +122,8 @@ export default function DashboardPage() {
             {/* Team Selector */}
             <div className="mb-6">
               <label className="block text-sm font-medium mb-2">Select Team</label>
-              <Select
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 value={selectedTeamId?.toString() || ''}
                 onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSelectedTeamId(parseInt(e.target.value))}
               >
@@ -123,7 +132,7 @@ export default function DashboardPage() {
                     {team.name} - {team.season}
                   </option>
                 ))}
-              </Select>
+              </select>
             </div>
 
             {/* Summary Cards */}

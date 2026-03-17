@@ -23,11 +23,18 @@ export default function PlayerDetailPage() {
         setLoading(true);
 
         // Fetch player details and summary
+        console.log('Fetching player data for ID:', playerId);
         const [playerResponse, summaryResponse, gamesResponse] = await Promise.all([
           fetch(`/api/players/${playerId}`),
           fetch(`/api/players/${playerId}/summary`),
           fetch(`/api/players/${playerId}/games?limit=10`)
         ]);
+
+        console.log('Player API response statuses:', {
+          player: playerResponse.status,
+          summary: summaryResponse.status,
+          games: gamesResponse.status
+        });
 
         if (playerResponse.ok && summaryResponse.ok && gamesResponse.ok) {
           const [playerData, summaryData, gamesData] = await Promise.all([
