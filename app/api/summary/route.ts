@@ -84,7 +84,11 @@ export async function GET(request: NextRequest) {
         const teamIdNum = parseInt(teamId);
 
         // Get data step by step with error handling
-        let teamSummary, topPlayers, trendData, recentGames, leaderboards;
+        let teamSummary: any = null;
+        let topPlayers: any[] = [];
+        let trendData: any[] = [];
+        let recentGames: any[] = [];
+        let leaderboards: any = {};
 
         try {
           teamSummary = await getTeamSeasonSummary(teamIdNum, season || undefined);
