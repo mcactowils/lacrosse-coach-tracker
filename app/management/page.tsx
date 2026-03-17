@@ -74,12 +74,21 @@ export default function ManagementPage() {
     if (!selectedTeamId) return;
 
     try {
+      console.log('Fetching dashboard data for team:', selectedTeamId);
       const response = await fetch(`/api/summary?teamId=${selectedTeamId}`);
+      console.log('Dashboard API response status:', response.status);
+
       if (response.ok) {
         const data = await response.json();
+        console.log('Dashboard API data:', data);
         setTeamSummary(data.team);
         setTopPlayers(data.topPlayers || []);
         setTrendData(data.trend || []);
+        console.log('Set trendData:', data.trend);
+        console.log('Set topPlayers:', data.topPlayers);
+      } else {
+        const errorText = await response.text();
+        console.error('Dashboard API Error:', response.status, errorText);
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -102,11 +111,18 @@ export default function ManagementPage() {
 
   const fetchPlayerDetails = async (playerId: number) => {
     try {
+      console.log('Fetching player details for:', playerId);
       const [playerResponse, summaryResponse, gamesResponse] = await Promise.all([
         fetch(`/api/players/${playerId}`),
         fetch(`/api/players/${playerId}/summary`),
         fetch(`/api/players/${playerId}/games?limit=10`)
       ]);
+
+      console.log('Player API response statuses:', {
+        player: playerResponse.status,
+        summary: summaryResponse.status,
+        games: gamesResponse.status
+      });
 
       if (playerResponse.ok && summaryResponse.ok && gamesResponse.ok) {
         const [playerData, summaryData, gamesData] = await Promise.all([
@@ -115,10 +131,17 @@ export default function ManagementPage() {
           gamesResponse.json()
         ]);
 
+        console.log('Player details data:', { playerData, summaryData, gamesData });
+
         setPlayerDetails(playerData);
         setPlayerSummary(summaryData);
         setPlayerGames(gamesData);
         setSelectedPlayerId(playerId);
+      } else {
+        console.error('One or more player APIs failed');
+        if (!playerResponse.ok) console.error('Player API error:', await playerResponse.text());
+        if (!summaryResponse.ok) console.error('Summary API error:', await summaryResponse.text());
+        if (!gamesResponse.ok) console.error('Games API error:', await gamesResponse.text());
       }
     } catch (error) {
       console.error('Error fetching player details:', error);
@@ -383,14 +406,14 @@ export default function ManagementPage() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>Recent Performance</CardTitle>
+                      <CardTitle>Team Performance Trend</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {trendData.length > 0 ? (
+                      {trendData && trendData.length > 0 ? (
                         <div className="h-64 flex items-end justify-between space-x-1">
-                          {trendData.slice(-8).map((game, index) => {
+                          {trendData.slice(-10).map((game, index) => {
                             const maxScore = Math.max(...trendData.map(g => g.impact_score));
-                            const height = (game.impact_score / maxScore) * 100;
+                            const height = maxScore > 0 ? (game.impact_score / maxScore) * 100 : 0;
                             const scoreLabel = getScoreLabel(game.impact_score);
 
                             return (
@@ -398,10 +421,10 @@ export default function ManagementPage() {
                                 <div
                                   className={`w-full rounded-t-sm ${scoreLabel.bgColor.replace('bg-', 'bg-').replace('100', '500')} transition-all duration-500`}
                                   style={{ height: `${height}%`, minHeight: '8px' }}
-                                  title={`${game.opponent}: ${game.impact_score} (${game.player_name})`}
+                                  title={`${game.opponent}: ${game.impact_score} (${game.player_name || 'Top Player'})`}
                                 ></div>
                                 <p className="text-xs text-gray-500 mt-2 transform -rotate-45 origin-left">
-                                  {formatDate(game.game_date).split(',')[0]}
+                                  {formatDate(game.game_date).split(', ')[0]}
                                 </p>
                               </div>
                             );
@@ -409,12 +432,73 @@ export default function ManagementPage() {
                         </div>
                       ) : (
                         <div className="h-64 flex items-center justify-center text-gray-500">
-                          No performance data available
+                          No trend data available
                         </div>
                       )}
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* Recent Player Performances */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Recent Player Performances</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="text-left py-3 px-4 font-medium text-gray-500">Player</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-500">Games</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-500">Avg GB</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-500">Avg SC</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-500">Avg EP</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-500">Avg Impact</th>
+                            <th className="text-left py-3 px-4 font-medium text-gray-500">Best Game</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {topPlayers && topPlayers.length > 0 ? topPlayers.map((player) => {
+                            const scoreLabel = getScoreLabel(player.avg_impact_score);
+                            const bestLabel = getScoreLabel(player.best_impact_score);
+
+                            return (
+                              <tr key={player.player_id} className="border-b border-gray-100 hover:bg-gray-50">
+                                <td className="py-3 px-4">
+                                  <div>
+                                    <p className="font-medium text-gray-900">{player.player_name}</p>
+                                    <p className="text-sm text-gray-500">#{player.jersey_number}</p>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-gray-900">{player.games_played}</td>
+                                <td className="py-3 px-4 text-gray-900">{player.avg_ground_balls}</td>
+                                <td className="py-3 px-4 text-gray-900">{player.avg_screens}</td>
+                                <td className="py-3 px-4 text-gray-900">{player.avg_effort_plays}</td>
+                                <td className="py-3 px-4">
+                                  <Badge className={`${scoreLabel.bgColor} ${scoreLabel.color}`}>
+                                    {player.avg_impact_score}
+                                  </Badge>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <Badge className={`${bestLabel.bgColor} ${bestLabel.color}`}>
+                                    {player.best_impact_score}
+                                  </Badge>
+                                </td>
+                              </tr>
+                            );
+                          }) : (
+                            <tr>
+                              <td colSpan={7} className="py-8 text-center text-gray-500">
+                                No player performance data available
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
               </>
             ) : (
               <Card>

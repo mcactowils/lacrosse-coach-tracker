@@ -12,6 +12,8 @@ interface TapCounterProps {
   onDecrement?: () => void;
   disabled?: boolean;
   className?: string;
+  target?: string;
+  onHelpClick?: () => void;
 }
 
 export function TapCounter({
@@ -21,13 +23,29 @@ export function TapCounter({
   onIncrement,
   onDecrement,
   disabled = false,
-  className
+  className,
+  target,
+  onHelpClick
 }: TapCounterProps) {
   return (
     <div className={cn("flex flex-col items-center space-y-3", className)}>
       {/* Label */}
       <div className="text-center">
-        <h3 className="font-semibold text-lg text-gray-900">{label}</h3>
+        <div className="flex items-center justify-center gap-2">
+          <h3 className="font-semibold text-lg text-gray-900">{label}</h3>
+          {onHelpClick && (
+            <button
+              onClick={onHelpClick}
+              className="w-6 h-6 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center text-gray-600 text-sm transition-colors"
+              title="View definition and examples"
+            >
+              ?
+            </button>
+          )}
+        </div>
+        {target && (
+          <p className="text-xs text-gray-500 mt-1">Target: {target}</p>
+        )}
       </div>
 
       {/* Count Display */}

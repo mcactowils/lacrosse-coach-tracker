@@ -8,6 +8,7 @@ import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TapCounter } from '@/components/tracker/TapCounter';
+import { HelpModal } from '@/components/tracker/HelpModal';
 import { getScoreLabel } from '@/lib/definitions';
 import { formatPlayerNameWithNumber, getLocalDate } from '@/lib/utils';
 import type { Player, TrackerState, Team } from '@/lib/types';
@@ -26,6 +27,13 @@ export default function TrackerPage() {
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [helpModal, setHelpModal] = useState<{
+    isOpen: boolean;
+    category: 'ground_balls' | 'screens' | 'effort_plays' | null;
+  }>({
+    isOpen: false,
+    category: null
+  });
 
   // Load teams
   useEffect(() => {
@@ -200,6 +208,14 @@ export default function TrackerPage() {
     return stats.ground_balls + stats.screens + stats.effort_plays;
   };
 
+  const openHelp = (category: 'ground_balls' | 'screens' | 'effort_plays') => {
+    setHelpModal({ isOpen: true, category });
+  };
+
+  const closeHelp = () => {
+    setHelpModal({ isOpen: false, category: null });
+  };
+
   const selectedPlayer = trackerState.selectedPlayerId
     ? players.find(p => p.id === trackerState.selectedPlayerId)
     : null;
@@ -337,22 +353,28 @@ export default function TrackerPage() {
                   label="Ground Balls"
                   count={getPlayerStats(selectedPlayer.id).ground_balls}
                   color="bg-blue-500 border-blue-500"
+                  target="3-5 per game"
                   onIncrement={() => incrementStat(selectedPlayer.id, 'ground_balls')}
                   onDecrement={() => decrementStat(selectedPlayer.id, 'ground_balls')}
+                  onHelpClick={() => openHelp('ground_balls')}
                 />
                 <TapCounter
                   label="Screens"
                   count={getPlayerStats(selectedPlayer.id).screens}
                   color="bg-green-500 border-green-500"
+                  target="4-6 per game"
                   onIncrement={() => incrementStat(selectedPlayer.id, 'screens')}
                   onDecrement={() => decrementStat(selectedPlayer.id, 'screens')}
+                  onHelpClick={() => openHelp('screens')}
                 />
                 <TapCounter
                   label="Effort Plays"
                   count={getPlayerStats(selectedPlayer.id).effort_plays}
                   color="bg-purple-500 border-purple-500"
+                  target="3+ per game"
                   onIncrement={() => incrementStat(selectedPlayer.id, 'effort_plays')}
                   onDecrement={() => decrementStat(selectedPlayer.id, 'effort_plays')}
+                  onHelpClick={() => openHelp('effort_plays')}
                 />
               </div>
             </CardContent>
@@ -415,6 +437,15 @@ export default function TrackerPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Help Modal */}
+        {helpModal.category && (
+          <HelpModal
+            category={helpModal.category}
+            isOpen={helpModal.isOpen}
+            onClose={closeHelp}
+          />
         )}
       </div>
     </div>

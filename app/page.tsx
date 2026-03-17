@@ -71,38 +71,139 @@ export default function HomePage() {
             <CardTitle>3-Number Impact System</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
-                  GB
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Ground Balls */}
+              <div className="bg-blue-50 p-6 rounded-lg">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-lg font-bold mr-3">
+                    GB
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Ground Balls</h3>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Ground Balls</h3>
-                <p className="text-sm text-gray-600">
-                  Gaining possession of loose balls during live play
-                </p>
-                <p className="text-xs text-blue-600 mt-1">Target: 3-5 per game</p>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Definition</h4>
+                  <p className="text-sm text-gray-700 mb-3">
+                    A ground ball is counted when the player successfully gains possession of a loose ball during live play.
+                    This usually occurs after a shot, pass, check, or deflection.
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Examples that count</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Scooping up a loose ball on the field</li>
+                    <li>• Winning a contested loose ball against an opponent</li>
+                    <li>• Picking up a rebound after a shot hits the ground</li>
+                    <li>• Recovering a dropped or checked ball</li>
+                    <li>• Scooping a loose ball created by a teammate's check</li>
+                  </ul>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Does NOT count</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Picking the ball up during a dead-ball restart</li>
+                    <li>• Receiving a pass from a teammate</li>
+                    <li>• Catching a rebound in the air before it touches the ground</li>
+                    <li>• Picking up a ball that rolled out of bounds and is returned</li>
+                  </ul>
+                </div>
+
+                <div className="bg-blue-100 p-3 rounded text-center">
+                  <p className="text-sm font-medium text-blue-800">Target: 3-5 per game</p>
+                  <p className="text-xs text-blue-700 mt-1">Ground balls win possessions, and possessions create scoring opportunities.</p>
+                </div>
               </div>
 
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
-                  SC
+              {/* Screens */}
+              <div className="bg-green-50 p-6 rounded-lg">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-lg font-bold mr-3">
+                    SC
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Screens</h3>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Screens</h3>
-                <p className="text-sm text-gray-600">
-                  Setting body position to create space for teammates
-                </p>
-                <p className="text-xs text-green-600 mt-1">Target: 4-6 per game</p>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Definition</h4>
+                  <p className="text-sm text-gray-700 mb-3">
+                    A screen (or pick) occurs when a player sets their body position to block or delay a defender,
+                    allowing a teammate to gain space. Screens can occur on-ball or off-ball.
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Examples that count</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• On-ball pick that frees a dodging teammate</li>
+                    <li>• Off-ball screen that allows a teammate to cut to goal</li>
+                    <li>• Crease screen that frees a shooter</li>
+                    <li>• Screen that forces a defender to change direction or switch</li>
+                  </ul>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Does NOT count</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Running near a defender without setting position</li>
+                    <li>• Attempting a screen that the teammate does not use</li>
+                    <li>• Moving while screening (illegal moving pick)</li>
+                    <li>• Accidental contact without intentional screen positioning</li>
+                  </ul>
+                </div>
+
+                <div className="bg-green-100 p-3 rounded">
+                  <p className="text-sm font-medium text-green-800 text-center">Target: 4-6 per game</p>
+                  <p className="text-xs text-green-700 mt-1 text-center font-medium">Coaching reminder: Set → Hold → Slip</p>
+                  <p className="text-xs text-green-700 mt-1">After setting the screen, the player should roll or slip to open space.</p>
+                </div>
               </div>
 
-              <div className="text-center">
-                <div className="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
-                  EP
+              {/* Effort Plays */}
+              <div className="bg-purple-50 p-6 rounded-lg">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-lg font-bold mr-3">
+                    EP
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">Effort Plays</h3>
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-2">Effort Plays</h3>
-                <p className="text-sm text-gray-600">
-                  High-energy actions that help the team succeed
-                </p>
-                <p className="text-xs text-purple-600 mt-1">Target: 3+ per game</p>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Definition</h4>
+                  <p className="text-sm text-gray-700 mb-3">
+                    An effort play is a high-energy action that helps the team but may not appear in traditional statistics.
+                    These plays demonstrate hustle, awareness, and team play.
+                  </p>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Examples that count</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Backing up a teammate's shot</li>
+                    <li>• Riding hard and disrupting a defensive clear</li>
+                    <li>• Smart off-ball cut that creates space for a teammate</li>
+                    <li>• Helping a teammate get open</li>
+                    <li>• Hustling back on defense after a turnover</li>
+                    <li>• Communicating a screen or defensive assignment</li>
+                    <li>• Slipping to space after setting a screen</li>
+                    <li>• Recovering a loose ball that prevents an opponent's fast break</li>
+                  </ul>
+                </div>
+
+                <div className="mb-4">
+                  <h4 className="font-medium text-gray-900 mb-2">Does NOT count</h4>
+                  <ul className="text-sm text-gray-700 space-y-1">
+                    <li>• Standing in position without active involvement</li>
+                    <li>• Routine jogging without influencing the play</li>
+                    <li>• Passive participation in the offense or defense</li>
+                  </ul>
+                </div>
+
+                <div className="bg-purple-100 p-3 rounded text-center">
+                  <p className="text-sm font-medium text-purple-800">Target: 3+ per game</p>
+                  <p className="text-xs text-purple-700 mt-1">These actions often change momentum and help the team succeed even when the player does not have the ball.</p>
+                </div>
               </div>
             </div>
 
