@@ -111,32 +111,11 @@ export default function PlayersPage() {
 
       if (response.ok) {
         const createdPlayer = await response.json();
-        // Refresh the player data
-        const fetchData = async () => {
-          try {
-            setLoading(true);
-            const [playersResponse, summariesResponse] = await Promise.all([
-              fetch(`/api/players?teamId=${selectedTeamId}&active=true&search=${searchTerm}`),
-              fetch(`/api/summary?teamId=${selectedTeamId}&type=players&limit=50`)
-            ]);
 
-            if (playersResponse.ok && summariesResponse.ok) {
-              const [playersData, summariesData] = await Promise.all([
-                playersResponse.json(),
-                summariesResponse.json()
-              ]);
+        // Add the new player to the existing players list immediately
+        setPlayers(prevPlayers => [...prevPlayers, createdPlayer]);
 
-              setPlayers(playersData);
-              setPlayerSummaries(summariesData);
-            }
-          } catch (error) {
-            console.error('Error refreshing data:', error);
-          } finally {
-            setLoading(false);
-          }
-        };
-
-        await fetchData();
+        // Reset form and hide it
         setNewPlayer({ first_name: '', last_name: '', jersey_number: '' });
         setShowCreateForm(false);
         alert('Player created successfully!');
@@ -152,9 +131,30 @@ export default function PlayersPage() {
     }
   };
 
-  const filteredSummaries = playerSummaries.filter(summary =>
-    summary.player_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (summary.jersey_number && summary.jersey_number.toString().includes(searchTerm))
+  // Combine all players with their summary data (if available)
+  const enrichedPlayers = players.map(player => {
+    const summary = playerSummaries.find(s => s.player_id === player.id);
+    return {
+      player_id: player.id,
+      player_name: `${player.first_name} ${player.last_name}`,
+      jersey_number: player.jersey_number,
+      games_played: summary?.games_played || 0,
+      avg_ground_balls: summary?.avg_ground_balls || 0,
+      avg_screens: summary?.avg_screens || 0,
+      avg_effort_plays: summary?.avg_effort_plays || 0,
+      avg_impact_score: summary?.avg_impact_score || 0,
+      best_impact_score: summary?.best_impact_score || 0,
+      latest_impact_score: summary?.latest_impact_score || null,
+      total_ground_balls: summary?.total_ground_balls || 0,
+      total_screens: summary?.total_screens || 0,
+      total_effort_plays: summary?.total_effort_plays || 0,
+      total_impact_score: summary?.total_impact_score || 0,
+    };
+  });
+
+  const filteredSummaries = enrichedPlayers.filter(player =>
+    player.player_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (player.jersey_number && player.jersey_number.toString().includes(searchTerm))
   );
 
   if (loading) {
