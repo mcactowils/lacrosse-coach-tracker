@@ -18,6 +18,13 @@ export default function PlayersPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newPlayer, setNewPlayer] = useState({
+    first_name: '',
+    last_name: '',
+    jersey_number: '',
+  });
 
   useEffect(() => {
     const fetchTeams = async () => {
@@ -75,6 +82,76 @@ export default function PlayersPage() {
     fetchData();
   }, [selectedTeamId, searchTerm]);
 
+  const handleCreatePlayer = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedTeamId) {
+      alert('Please select a team first');
+      return;
+    }
+
+    if (!newPlayer.first_name.trim() || !newPlayer.last_name.trim()) {
+      alert('Please fill in first name and last name');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      const response = await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          team_id: selectedTeamId,
+          first_name: newPlayer.first_name.trim(),
+          last_name: newPlayer.last_name.trim(),
+          jersey_number: newPlayer.jersey_number ? parseInt(newPlayer.jersey_number) : null,
+          active: true
+        })
+      });
+
+      if (response.ok) {
+        const createdPlayer = await response.json();
+        // Refresh the player data
+        const fetchData = async () => {
+          try {
+            setLoading(true);
+            const [playersResponse, summariesResponse] = await Promise.all([
+              fetch(`/api/players?teamId=${selectedTeamId}&active=true&search=${searchTerm}`),
+              fetch(`/api/summary?teamId=${selectedTeamId}&type=players&limit=50`)
+            ]);
+
+            if (playersResponse.ok && summariesResponse.ok) {
+              const [playersData, summariesData] = await Promise.all([
+                playersResponse.json(),
+                summariesResponse.json()
+              ]);
+
+              setPlayers(playersData);
+              setPlayerSummaries(summariesData);
+            }
+          } catch (error) {
+            console.error('Error refreshing data:', error);
+          } finally {
+            setLoading(false);
+          }
+        };
+
+        await fetchData();
+        setNewPlayer({ first_name: '', last_name: '', jersey_number: '' });
+        setShowCreateForm(false);
+        alert('Player created successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error creating player: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error creating player:', error);
+      alert('Error creating player. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const filteredSummaries = playerSummaries.filter(summary =>
     summary.player_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (summary.jersey_number && summary.jersey_number.toString().includes(searchTerm))
@@ -124,13 +201,121 @@ export default function PlayersPage() {
             />
           </div>
           <div className="flex items-end">
-            <Button className="w-full">Add New Player</Button>
+            <Button
+              className="w-full"
+              onClick={() => setShowCreateForm(!showCreateForm)}
+              disabled={!selectedTeamId || teams.length === 0}
+            >
+              {showCreateForm ? 'Cancel' : 'Add New Player'}
+            </Button>
           </div>
         </div>
 
-        {/* Players Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredSummaries.map((summary) => {
+        {/* Create Player Form */}
+        {showCreateForm && selectedTeamId && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle>Add New Player</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreatePlayer} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">First Name *</label>
+                    <Input
+                      placeholder="e.g., John"
+                      value={newPlayer.first_name}
+                      onChange={(e) => setNewPlayer(prev => ({ ...prev, first_name: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Last Name *</label>
+                    <Input
+                      placeholder="e.g., Smith"
+                      value={newPlayer.last_name}
+                      onChange={(e) => setNewPlayer(prev => ({ ...prev, last_name: e.target.value }))}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Jersey Number</label>
+                    <Input
+                      type="number"
+                      placeholder="e.g., 25"
+                      value={newPlayer.jersey_number}
+                      onChange={(e) => setNewPlayer(prev => ({ ...prev, jersey_number: e.target.value }))}
+                      min="0"
+                      max="99"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button type="submit" disabled={creating}>
+                    {creating ? 'Creating...' : 'Create Player'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateForm(false);
+                      setNewPlayer({ first_name: '', last_name: '', jersey_number: '' });
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No Teams State */}
+        {teams.length === 0 ? (
+          <Card>
+            <CardContent className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No teams found</h3>
+              <p className="text-gray-600 mb-6">Create a team first to start managing players</p>
+              <Link href="/teams">
+                <Button className="bg-green-600 hover:bg-green-700">Create Your First Team</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : filteredSummaries.length === 0 ? (
+          <Card className="col-span-full">
+            <CardContent className="text-center py-12">
+              <div className="text-gray-500 mb-4">
+                <svg className="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {searchTerm ? 'No players match your search' : 'No players yet'}
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {searchTerm
+                  ? 'Try adjusting your search terms or add a new player'
+                  : 'Add your first player to start tracking their performance'
+                }
+              </p>
+              <Button
+                onClick={() => setShowCreateForm(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+                disabled={!selectedTeamId}
+              >
+                Add Your First Player
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          /* Players Grid */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredSummaries.map((summary) => {
             const avgScoreLabel = getScoreLabel(summary.avg_impact_score);
             const bestScoreLabel = getScoreLabel(summary.best_impact_score);
 
@@ -203,19 +388,8 @@ export default function PlayersPage() {
                 </Card>
               </Link>
             );
-          })}
-        </div>
-
-        {/* Empty State */}
-        {filteredSummaries.length === 0 && (
-          <Card className="text-center py-12">
-            <CardContent>
-              <p className="text-gray-500 text-lg mb-4">
-                {searchTerm ? 'No players found matching your search.' : 'No players found for this team.'}
-              </p>
-              <Button>Add First Player</Button>
-            </CardContent>
-          </Card>
+            })}
+          </div>
         )}
       </div>
     </div>
