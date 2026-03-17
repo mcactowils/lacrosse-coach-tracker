@@ -17,9 +17,9 @@ export default function HomePage() {
             Track player performance with our 3-number impact system
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-2xl mx-auto">
-            <Link href="/teams" className="flex-1">
+            <Link href="/management" className="flex-1">
               <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
-                Create Your First Team
+                Team Management
               </Button>
             </Link>
             <Link href="/tracker" className="flex-1">
@@ -27,27 +27,22 @@ export default function HomePage() {
                 Start Tracking
               </Button>
             </Link>
-            <Link href="/dashboard" className="flex-1">
-              <Button variant="outline" size="lg" className="w-full">
-                View Dashboard
-              </Button>
-            </Link>
           </div>
         </div>
 
         {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 max-w-4xl mx-auto">
           <Card className="text-center flex flex-col h-full">
             <CardHeader>
-              <CardTitle className="text-orange-600">🏆 Team Setup</CardTitle>
+              <CardTitle className="text-green-600">🏆 Team Management</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <p className="text-gray-600 flex-1">
-                Create and manage your teams and seasons to get started
+                Complete team and player management with performance analytics, team setup, and detailed statistics in one place
               </p>
-              <Link href="/teams" className="block mt-4">
+              <Link href="/management" className="block mt-4">
                 <Button variant="outline" className="w-full">
-                  Manage Teams →
+                  Manage Teams & Players →
                 </Button>
               </Link>
             </CardContent>
@@ -55,47 +50,15 @@ export default function HomePage() {
 
           <Card className="text-center flex flex-col h-full">
             <CardHeader>
-              <CardTitle className="text-blue-600">📱 Live Tracking</CardTitle>
+              <CardTitle className="text-blue-600">📱 Live Game Tracking</CardTitle>
             </CardHeader>
             <CardContent className="flex-1 flex flex-col">
               <p className="text-gray-600 flex-1">
-                Real-time game tracking with tap counters for Ground Balls, Screens, and Effort Plays
+                Real-time game tracking with tap counters for Ground Balls, Screens, and Effort Plays during live games
               </p>
               <Link href="/tracker" className="block mt-4">
                 <Button variant="outline" className="w-full">
-                  Start Tracking →
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center flex flex-col h-full">
-            <CardHeader>
-              <CardTitle className="text-green-600">📊 Team Dashboard</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <p className="text-gray-600 flex-1">
-                Comprehensive analytics, team performance trends, and player leaderboards
-              </p>
-              <Link href="/dashboard" className="block mt-4">
-                <Button variant="outline" className="w-full">
-                  View Dashboard →
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="text-center flex flex-col h-full">
-            <CardHeader>
-              <CardTitle className="text-purple-600">👥 Player Management</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col">
-              <p className="text-gray-600 flex-1">
-                Individual player profiles with detailed statistics and progress tracking
-              </p>
-              <Link href="/players" className="block mt-4">
-                <Button variant="outline" className="w-full">
-                  Manage Players →
+                  Start Live Tracking →
                 </Button>
               </Link>
             </CardContent>
