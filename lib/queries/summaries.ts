@@ -75,32 +75,54 @@ export async function getTeamSeasonSummary(
 }
 
 export async function getAllTeamsSummary(season?: string): Promise<TeamSeasonSummary[]> {
-  const seasonCondition = season
-    ? sql`WHERE t.season = ${season}`
-    : sql``;
+  let result;
 
-  const result = await sql`
-    SELECT
-      t.id as team_id,
-      t.name as team_name,
-      t.season,
-      COUNT(DISTINCT g.id) as total_games,
-      COUNT(DISTINCT p.id) as total_players,
-      COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_team_impact,
-      COALESCE(MAX(
-        (SELECT SUM(gs2.impact_score)
-         FROM game_stats gs2
-         WHERE gs2.game_id = g.id)
-      ), 0) as best_team_game,
-      COALESCE(MAX(gs.impact_score), 0) as best_individual_game
-    FROM teams t
-    LEFT JOIN games g ON t.id = g.team_id
-    LEFT JOIN players p ON t.id = p.team_id AND p.active = true
-    LEFT JOIN game_stats gs ON g.id = gs.game_id
-    ${seasonCondition}
-    GROUP BY t.id, t.name, t.season
-    ORDER BY t.name
-  `;
+  if (season) {
+    result = await sql`
+      SELECT
+        t.id as team_id,
+        t.name as team_name,
+        t.season,
+        COUNT(DISTINCT g.id) as total_games,
+        COUNT(DISTINCT p.id) as total_players,
+        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_team_impact,
+        COALESCE(MAX(
+          (SELECT SUM(gs2.impact_score)
+           FROM game_stats gs2
+           WHERE gs2.game_id = g.id)
+        ), 0) as best_team_game,
+        COALESCE(MAX(gs.impact_score), 0) as best_individual_game
+      FROM teams t
+      LEFT JOIN games g ON t.id = g.team_id
+      LEFT JOIN players p ON t.id = p.team_id AND p.active = true
+      LEFT JOIN game_stats gs ON g.id = gs.game_id
+      WHERE t.season = ${season}
+      GROUP BY t.id, t.name, t.season
+      ORDER BY t.name
+    `;
+  } else {
+    result = await sql`
+      SELECT
+        t.id as team_id,
+        t.name as team_name,
+        t.season,
+        COUNT(DISTINCT g.id) as total_games,
+        COUNT(DISTINCT p.id) as total_players,
+        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_team_impact,
+        COALESCE(MAX(
+          (SELECT SUM(gs2.impact_score)
+           FROM game_stats gs2
+           WHERE gs2.game_id = g.id)
+        ), 0) as best_team_game,
+        COALESCE(MAX(gs.impact_score), 0) as best_individual_game
+      FROM teams t
+      LEFT JOIN games g ON t.id = g.team_id
+      LEFT JOIN players p ON t.id = p.team_id AND p.active = true
+      LEFT JOIN game_stats gs ON g.id = gs.game_id
+      GROUP BY t.id, t.name, t.season
+      ORDER BY t.name
+    `;
+  }
 
   return result as TeamSeasonSummary[];
 }
@@ -110,40 +132,75 @@ export async function getTopPerformers(
   limit: number = 10
 ): Promise<PlayerSeasonSummary[]> {
   try {
-    const teamCondition = teamId ? sql`AND p.team_id = ${teamId}` : sql``;
+    let result;
 
-    const result = await sql`
-    SELECT
-      p.id as player_id,
-      p.first_name || ' ' || p.last_name as player_name,
-      p.jersey_number,
-      COUNT(DISTINCT g.id) as games_played,
-      COALESCE(SUM(gs.ground_balls), 0) as total_ground_balls,
-      COALESCE(SUM(gs.screens), 0) as total_screens,
-      COALESCE(SUM(gs.effort_plays), 0) as total_effort_plays,
-      COALESCE(SUM(gs.impact_score), 0) as total_impact_score,
-      COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
-      COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
-      COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
-      COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
-      COALESCE(MAX(gs.impact_score), 0) as best_impact_score,
-      (
-        SELECT gs2.impact_score
-        FROM game_stats gs2
-        JOIN games g2 ON gs2.game_id = g2.id
-        WHERE gs2.player_id = p.id
-        ORDER BY g2.game_date DESC
-        LIMIT 1
-      ) as latest_impact_score
-    FROM players p
-    LEFT JOIN game_stats gs ON p.id = gs.player_id
-    LEFT JOIN games g ON gs.game_id = g.id
-    WHERE p.active = true ${teamCondition}
-    GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
-    HAVING COUNT(DISTINCT g.id) > 0
-    ORDER BY avg_impact_score DESC, total_impact_score DESC
-    LIMIT ${limit}
-  `;
+    if (teamId) {
+      result = await sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COUNT(DISTINCT g.id) as games_played,
+          COALESCE(SUM(gs.ground_balls), 0) as total_ground_balls,
+          COALESCE(SUM(gs.screens), 0) as total_screens,
+          COALESCE(SUM(gs.effort_plays), 0) as total_effort_plays,
+          COALESCE(SUM(gs.impact_score), 0) as total_impact_score,
+          COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
+          COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
+          COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
+          COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
+          COALESCE(MAX(gs.impact_score), 0) as best_impact_score,
+          (
+            SELECT gs2.impact_score
+            FROM game_stats gs2
+            JOIN games g2 ON gs2.game_id = g2.id
+            WHERE gs2.player_id = p.id
+            ORDER BY g2.game_date DESC
+            LIMIT 1
+          ) as latest_impact_score
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        LEFT JOIN games g ON gs.game_id = g.id
+        WHERE p.active = true AND p.team_id = ${teamId}
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(DISTINCT g.id) > 0
+        ORDER BY avg_impact_score DESC, total_impact_score DESC
+        LIMIT ${limit}
+      `;
+    } else {
+      result = await sql`
+        SELECT
+          p.id as player_id,
+          p.first_name || ' ' || p.last_name as player_name,
+          p.jersey_number,
+          COUNT(DISTINCT g.id) as games_played,
+          COALESCE(SUM(gs.ground_balls), 0) as total_ground_balls,
+          COALESCE(SUM(gs.screens), 0) as total_screens,
+          COALESCE(SUM(gs.effort_plays), 0) as total_effort_plays,
+          COALESCE(SUM(gs.impact_score), 0) as total_impact_score,
+          COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
+          COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
+          COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
+          COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
+          COALESCE(MAX(gs.impact_score), 0) as best_impact_score,
+          (
+            SELECT gs2.impact_score
+            FROM game_stats gs2
+            JOIN games g2 ON gs2.game_id = g2.id
+            WHERE gs2.player_id = p.id
+            ORDER BY g2.game_date DESC
+            LIMIT 1
+          ) as latest_impact_score
+        FROM players p
+        LEFT JOIN game_stats gs ON p.id = gs.player_id
+        LEFT JOIN games g ON gs.game_id = g.id
+        WHERE p.active = true
+        GROUP BY p.id, p.first_name, p.last_name, p.jersey_number
+        HAVING COUNT(DISTINCT g.id) > 0
+        ORDER BY avg_impact_score DESC, total_impact_score DESC
+        LIMIT ${limit}
+      `;
+    }
 
     return result as PlayerSeasonSummary[];
   } catch (error) {
@@ -181,30 +238,50 @@ export async function getTeamTrendData(
 }
 
 export async function getSeasonStats(season?: string) {
-  const seasonCondition = season
-    ? sql`WHERE t.season = ${season}`
-    : sql``;
+  let result;
 
-  const result = await sql`
-    SELECT
-      COUNT(DISTINCT t.id) as total_teams,
-      COUNT(DISTINCT p.id) as total_players,
-      COUNT(DISTINCT g.id) as total_games,
-      COALESCE(SUM(gs.ground_balls), 0) as total_ground_balls,
-      COALESCE(SUM(gs.screens), 0) as total_screens,
-      COALESCE(SUM(gs.effort_plays), 0) as total_effort_plays,
-      COALESCE(SUM(gs.impact_score), 0) as total_impact_score,
-      COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
-      COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
-      COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
-      COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
-      COALESCE(MAX(gs.impact_score), 0) as best_impact_score
-    FROM teams t
-    LEFT JOIN players p ON t.id = p.team_id AND p.active = true
-    LEFT JOIN games g ON t.id = g.team_id
-    LEFT JOIN game_stats gs ON g.id = gs.game_id
-    ${seasonCondition}
-  `;
+  if (season) {
+    result = await sql`
+      SELECT
+        COUNT(DISTINCT t.id) as total_teams,
+        COUNT(DISTINCT p.id) as total_players,
+        COUNT(DISTINCT g.id) as total_games,
+        COALESCE(SUM(gs.ground_balls), 0) as total_ground_balls,
+        COALESCE(SUM(gs.screens), 0) as total_screens,
+        COALESCE(SUM(gs.effort_plays), 0) as total_effort_plays,
+        COALESCE(SUM(gs.impact_score), 0) as total_impact_score,
+        COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
+        COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
+        COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
+        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
+        COALESCE(MAX(gs.impact_score), 0) as best_impact_score
+      FROM teams t
+      LEFT JOIN players p ON t.id = p.team_id AND p.active = true
+      LEFT JOIN games g ON t.id = g.team_id
+      LEFT JOIN game_stats gs ON g.id = gs.game_id
+      WHERE t.season = ${season}
+    `;
+  } else {
+    result = await sql`
+      SELECT
+        COUNT(DISTINCT t.id) as total_teams,
+        COUNT(DISTINCT p.id) as total_players,
+        COUNT(DISTINCT g.id) as total_games,
+        COALESCE(SUM(gs.ground_balls), 0) as total_ground_balls,
+        COALESCE(SUM(gs.screens), 0) as total_screens,
+        COALESCE(SUM(gs.effort_plays), 0) as total_effort_plays,
+        COALESCE(SUM(gs.impact_score), 0) as total_impact_score,
+        COALESCE(ROUND(AVG(gs.ground_balls), 1), 0) as avg_ground_balls,
+        COALESCE(ROUND(AVG(gs.screens), 1), 0) as avg_screens,
+        COALESCE(ROUND(AVG(gs.effort_plays), 1), 0) as avg_effort_plays,
+        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_impact_score,
+        COALESCE(MAX(gs.impact_score), 0) as best_impact_score
+      FROM teams t
+      LEFT JOIN players p ON t.id = p.team_id AND p.active = true
+      LEFT JOIN games g ON t.id = g.team_id
+      LEFT JOIN game_stats gs ON g.id = gs.game_id
+    `;
+  }
 
   return result[0];
 }
