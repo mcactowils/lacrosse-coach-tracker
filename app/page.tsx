@@ -37,12 +37,12 @@ export default function HomePage() {
 
         {/* Feature Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-          <Card className="text-center">
+          <Card className="text-center flex flex-col h-full">
             <CardHeader>
               <CardTitle className="text-orange-600">🏆 Team Setup</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">
+            <CardContent className="flex-1 flex flex-col">
+              <p className="text-gray-600 flex-1">
                 Create and manage your teams and seasons to get started
               </p>
               <Link href="/teams" className="block mt-4">
@@ -53,12 +53,12 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center flex flex-col h-full">
             <CardHeader>
               <CardTitle className="text-blue-600">📱 Live Tracking</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">
+            <CardContent className="flex-1 flex flex-col">
+              <p className="text-gray-600 flex-1">
                 Real-time game tracking with tap counters for Ground Balls, Screens, and Effort Plays
               </p>
               <Link href="/tracker" className="block mt-4">
@@ -69,12 +69,12 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center flex flex-col h-full">
             <CardHeader>
               <CardTitle className="text-green-600">📊 Team Dashboard</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">
+            <CardContent className="flex-1 flex flex-col">
+              <p className="text-gray-600 flex-1">
                 Comprehensive analytics, team performance trends, and player leaderboards
               </p>
               <Link href="/dashboard" className="block mt-4">
@@ -85,12 +85,12 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card className="text-center">
+          <Card className="text-center flex flex-col h-full">
             <CardHeader>
               <CardTitle className="text-purple-600">👥 Player Management</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">
+            <CardContent className="flex-1 flex flex-col">
+              <p className="text-gray-600 flex-1">
                 Individual player profiles with detailed statistics and progress tracking
               </p>
               <Link href="/players" className="block mt-4">

@@ -16,6 +16,9 @@ export default function TeamsPage() {
     name: '',
     season: ''
   });
+  const [editingTeam, setEditingTeam] = useState<Team | null>(null);
+  const [showRoster, setShowRoster] = useState<number | null>(null);
+  const [rosterData, setRosterData] = useState<any[]>([]);
 
   useEffect(() => {
     fetchTeams();
@@ -83,6 +86,67 @@ export default function TeamsPage() {
     });
   };
 
+  const handleViewRoster = async (teamId: number) => {
+    try {
+      const response = await fetch(`/api/players?teamId=${teamId}&active=true`);
+      if (response.ok) {
+        const players = await response.json();
+        setRosterData(players);
+        setShowRoster(teamId);
+      }
+    } catch (error) {
+      console.error('Error fetching roster:', error);
+      alert('Error loading roster. Please try again.');
+    }
+  };
+
+  const handleEditTeam = (team: Team) => {
+    setEditingTeam(team);
+    setNewTeam({
+      name: team.name,
+      season: team.season
+    });
+  };
+
+  const handleUpdateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!editingTeam) return;
+
+    if (!newTeam.name.trim() || !newTeam.season.trim()) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    try {
+      setCreating(true);
+      const response = await fetch(`/api/teams/${editingTeam.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newTeam.name.trim(),
+          season: newTeam.season.trim()
+        })
+      });
+
+      if (response.ok) {
+        const updatedTeam = await response.json();
+        setTeams(teams.map(t => t.id === editingTeam.id ? updatedTeam : t));
+        setNewTeam({ name: '', season: '' });
+        setEditingTeam(null);
+        alert('Team updated successfully!');
+      } else {
+        const error = await response.json();
+        alert(`Error updating team: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating team:', error);
+      alert('Error updating team. Please try again.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -111,14 +175,14 @@ export default function TeamsPage() {
           </Button>
         </div>
 
-        {/* Create Team Form */}
-        {showCreateForm && (
+        {/* Create/Edit Team Form */}
+        {(showCreateForm || editingTeam) && (
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Create New Team</CardTitle>
+              <CardTitle>{editingTeam ? 'Edit Team' : 'Create New Team'}</CardTitle>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleCreateTeam} className="space-y-4">
+              <form onSubmit={editingTeam ? handleUpdateTeam : handleCreateTeam} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Team Name *</label>
@@ -141,13 +205,14 @@ export default function TeamsPage() {
                 </div>
                 <div className="flex gap-3">
                   <Button type="submit" disabled={creating}>
-                    {creating ? 'Creating...' : 'Create Team'}
+                    {creating ? (editingTeam ? 'Updating...' : 'Creating...') : (editingTeam ? 'Update Team' : 'Create Team')}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => {
                       setShowCreateForm(false);
+                      setEditingTeam(null);
                       setNewTeam({ name: '', season: '' });
                     }}
                   >
@@ -203,10 +268,19 @@ export default function TeamsPage() {
                       <span className="font-medium">Created:</span> {formatDate(team.created_at)}
                     </p>
                     <div className="flex gap-2 mt-4">
-                      <Button variant="outline" size="sm" className="flex-1">
-                        View Details
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1"
+                        onClick={() => handleViewRoster(team.id)}
+                      >
+                        View Roster
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditTeam(team)}
+                      >
                         Edit
                       </Button>
                     </div>
@@ -220,6 +294,57 @@ export default function TeamsPage() {
         {teams.length > 0 && (
           <div className="mt-8 text-center text-sm text-gray-500">
             Total teams: {teams.length}
+          </div>
+        )}
+
+        {/* Roster Modal */}
+        {showRoster && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <Card className="max-w-2xl w-full max-h-[80vh] overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>
+                  Team Roster - {teams.find(t => t.id === showRoster)?.name}
+                </CardTitle>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowRoster(null)}
+                >
+                  Close
+                </Button>
+              </CardHeader>
+              <CardContent className="overflow-y-auto">
+                {rosterData.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No players in this team yet.</p>
+                    <p className="text-sm mt-2">Add players from the Players page.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {rosterData.map((player) => (
+                      <div
+                        key={player.id}
+                        className="flex items-center justify-between p-3 border rounded-lg"
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {player.first_name} {player.last_name}
+                          </p>
+                          {player.jersey_number && (
+                            <Badge variant="outline" className="mt-1">
+                              #{player.jersey_number}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {player.active ? 'Active' : 'Inactive'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>

@@ -24,9 +24,9 @@ export default function PlayerDetailPage() {
 
         // Fetch player details and summary
         const [playerResponse, summaryResponse, gamesResponse] = await Promise.all([
-          fetch(`/api/players?playerId=${playerId}`),
-          fetch(`/api/summary?type=players&playerId=${playerId}`),
-          fetch(`/api/games?playerId=${playerId}&limit=10`)
+          fetch(`/api/players/${playerId}`),
+          fetch(`/api/players/${playerId}/summary`),
+          fetch(`/api/players/${playerId}/games?limit=10`)
         ]);
 
         if (playerResponse.ok && summaryResponse.ok && gamesResponse.ok) {
@@ -36,8 +36,8 @@ export default function PlayerDetailPage() {
             gamesResponse.json()
           ]);
 
-          setPlayer(playerData[0] || null);
-          setSummary(summaryData[0] || null);
+          setPlayer(playerData || null);
+          setSummary(summaryData || null);
           setGameStats(gamesData || []);
         }
       } catch (error) {
