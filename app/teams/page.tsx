@@ -183,7 +183,7 @@ export default function TeamsPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={editingTeam ? handleUpdateTeam : handleCreateTeam} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">Team Name *</label>
                     <Input
@@ -246,7 +246,7 @@ export default function TeamsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
             {teams.map((team) => (
               <Card key={team.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>

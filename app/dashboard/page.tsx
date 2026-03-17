@@ -46,7 +46,6 @@ export default function DashboardPage() {
         const response = await fetch(`/api/summary?teamId=${selectedTeamId}`);
         if (response.ok) {
           const data = await response.json();
-          console.log('Dashboard API Response:', data);
           setTeamSummary(data.team);
           setTopPlayers(data.topPlayers || []);
           setTrendData(data.trend || []);
@@ -129,7 +128,7 @@ export default function DashboardPage() {
 
             {/* Summary Cards */}
             {teamSummary ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8">
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-medium text-gray-500">Total Games</CardTitle>

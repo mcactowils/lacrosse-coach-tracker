@@ -178,7 +178,7 @@ export default function PlayersPage() {
         </div>
 
         {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium mb-2">Select Team</label>
             <Select
@@ -219,7 +219,7 @@ export default function PlayersPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreatePlayer} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-1">First Name *</label>
                     <Input
@@ -314,7 +314,7 @@ export default function PlayersPage() {
           </Card>
         ) : (
           /* Players Grid */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
             {filteredSummaries.map((summary) => {
             const avgScoreLabel = getScoreLabel(summary.avg_impact_score);
             const bestScoreLabel = getScoreLabel(summary.best_impact_score);

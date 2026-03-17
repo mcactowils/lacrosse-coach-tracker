@@ -16,19 +16,19 @@ export default function HomePage() {
           <p className="text-xl text-gray-600 mb-8">
             Track player performance with our 3-number impact system
           </p>
-          <div className="flex justify-center space-x-4">
-            <Link href="/teams">
-              <Button size="lg" className="bg-green-600 hover:bg-green-700">
+          <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-2xl mx-auto">
+            <Link href="/teams" className="flex-1">
+              <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
                 Create Your First Team
               </Button>
             </Link>
-            <Link href="/tracker">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700">
+            <Link href="/tracker" className="flex-1">
+              <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
                 Start Tracking
               </Button>
             </Link>
-            <Link href="/dashboard">
-              <Button variant="outline" size="lg">
+            <Link href="/dashboard" className="flex-1">
+              <Button variant="outline" size="lg" className="w-full">
                 View Dashboard
               </Button>
             </Link>
@@ -108,7 +108,7 @@ export default function HomePage() {
             <CardTitle>3-Number Impact System</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               <div className="text-center">
                 <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-3">
                   GB
@@ -160,7 +160,7 @@ export default function HomePage() {
         {/* Navigation */}
         <div className="text-center">
           <p className="text-gray-500 mb-4">Ready to get started?</p>
-          <div className="flex flex-wrap justify-center gap-4">
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
             <Link href="/tracker">
               <Button variant="outline">Live Game Tracker</Button>
             </Link>

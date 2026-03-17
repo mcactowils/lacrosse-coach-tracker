@@ -332,7 +332,7 @@ export default function TrackerPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-8">
                 <TapCounter
                   label="Ground Balls"
                   count={getPlayerStats(selectedPlayer.id).ground_balls}
@@ -360,21 +360,22 @@ export default function TrackerPage() {
         )}
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <Button
             variant="outline"
             onClick={undoLastAction}
             disabled={!trackerState.lastAction}
+            className="w-full sm:w-auto"
           >
             Undo Last Action
           </Button>
-          <Button variant="outline" onClick={resetStats}>
+          <Button variant="outline" onClick={resetStats} className="w-full sm:w-auto">
             Reset All Stats
           </Button>
           <Button
             onClick={saveGame}
             disabled={saving || !trackerState.opponent.trim()}
-            className="ml-auto"
+            className="w-full sm:w-auto sm:ml-auto"
           >
             {saving ? 'Saving...' : 'Save Game'}
           </Button>
