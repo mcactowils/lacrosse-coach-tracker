@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TapCounter } from '@/components/tracker/TapCounter';
 import { getScoreLabel } from '@/lib/definitions';
-import { formatPlayerNameWithNumber } from '@/lib/utils';
+import { formatPlayerNameWithNumber, getLocalDate } from '@/lib/utils';
 import type { Player, TrackerState, Team } from '@/lib/types';
 
 export default function TrackerPage() {
@@ -18,7 +18,7 @@ export default function TrackerPage() {
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
   const [trackerState, setTrackerState] = useState<TrackerState>({
     selectedPlayerId: null,
-    gameDate: new Date().toISOString().split('T')[0],
+    gameDate: getLocalDate(),
     opponent: '',
     location: '',
     playerStats: {},
@@ -177,7 +177,7 @@ export default function TrackerPage() {
         // Reset the tracker
         setTrackerState({
           selectedPlayerId: null,
-          gameDate: new Date().toISOString().split('T')[0],
+          gameDate: getLocalDate(),
           opponent: '',
           location: '',
           playerStats: {},

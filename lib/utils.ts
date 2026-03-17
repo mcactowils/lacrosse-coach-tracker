@@ -133,6 +133,34 @@ export function getCurrentSeason(): string {
   }
 }
 
+export function getLocalDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function formatDateToLocal(dateString: string): string {
+  // Parse the date assuming it's in YYYY-MM-DD format and treat as local
+  const [year, month, day] = dateString.split('-').map(Number);
+  const localDate = new Date(year, month - 1, day);
+  return localDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+export function formatShortDateToLocal(dateString: string): string {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const localDate = new Date(year, month - 1, day);
+  return localDate.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
 export function isValidGameDate(dateString: string): boolean {
   const date = new Date(dateString);
   const now = new Date();
