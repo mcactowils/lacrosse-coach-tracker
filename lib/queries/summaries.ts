@@ -19,33 +19,55 @@ export async function getTeamSeasonSummary(
       return null;
     }
 
-    const seasonCondition = season
-      ? sql`AND t.season = ${season}`
-      : sql``;
+    let result;
 
-    const result = await sql`
-      SELECT
-        t.id as team_id,
-        t.name as team_name,
-        t.season,
-        COUNT(DISTINCT g.id) as total_games,
-        COUNT(DISTINCT p.id) as total_players,
-        COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_team_impact,
-        COALESCE(MAX(
-          (SELECT SUM(gs2.impact_score)
-           FROM game_stats gs2
-           WHERE gs2.game_id = g.id)
-        ), 0) as best_team_game,
-        COALESCE(MAX(gs.impact_score), 0) as best_individual_game
-      FROM teams t
-      LEFT JOIN games g ON t.id = g.team_id
-      LEFT JOIN players p ON t.id = p.team_id AND p.active = true
-      LEFT JOIN game_stats gs ON g.id = gs.game_id
-      WHERE t.id = ${teamId} ${seasonCondition}
-      GROUP BY t.id, t.name, t.season
-    `;
+    if (season) {
+      result = await sql`
+        SELECT
+          t.id as team_id,
+          t.name as team_name,
+          t.season,
+          COUNT(DISTINCT g.id) as total_games,
+          COUNT(DISTINCT p.id) as total_players,
+          COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_team_impact,
+          COALESCE(MAX(
+            (SELECT SUM(gs2.impact_score)
+             FROM game_stats gs2
+             WHERE gs2.game_id = g.id)
+          ), 0) as best_team_game,
+          COALESCE(MAX(gs.impact_score), 0) as best_individual_game
+        FROM teams t
+        LEFT JOIN games g ON t.id = g.team_id
+        LEFT JOIN players p ON t.id = p.team_id AND p.active = true
+        LEFT JOIN game_stats gs ON g.id = gs.game_id
+        WHERE t.id = ${teamId} AND t.season = ${season}
+        GROUP BY t.id, t.name, t.season
+      `;
+    } else {
+      result = await sql`
+        SELECT
+          t.id as team_id,
+          t.name as team_name,
+          t.season,
+          COUNT(DISTINCT g.id) as total_games,
+          COUNT(DISTINCT p.id) as total_players,
+          COALESCE(ROUND(AVG(gs.impact_score), 1), 0) as avg_team_impact,
+          COALESCE(MAX(
+            (SELECT SUM(gs2.impact_score)
+             FROM game_stats gs2
+             WHERE gs2.game_id = g.id)
+          ), 0) as best_team_game,
+          COALESCE(MAX(gs.impact_score), 0) as best_individual_game
+        FROM teams t
+        LEFT JOIN games g ON t.id = g.team_id
+        LEFT JOIN players p ON t.id = p.team_id AND p.active = true
+        LEFT JOIN game_stats gs ON g.id = gs.game_id
+        WHERE t.id = ${teamId}
+        GROUP BY t.id, t.name, t.season
+      `;
+    }
 
-    return result[0] as TeamSeasonSummary || null;
+    return result[0] || null;
   } catch (error) {
     console.error('Error in getTeamSeasonSummary:', error);
     return null;
