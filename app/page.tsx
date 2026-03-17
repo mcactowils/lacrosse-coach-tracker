@@ -13,21 +13,9 @@ export default function HomePage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             Lacrosse Coach Tracker
           </h1>
-          <p className="text-xl text-gray-600 mb-8">
+          <p className="text-xl text-gray-600">
             Track player performance with our 3-number impact system
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4 max-w-2xl mx-auto">
-            <Link href="/management" className="flex-1">
-              <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
-                Team Management
-              </Button>
-            </Link>
-            <Link href="/tracker" className="flex-1">
-              <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700">
-                Start Tracking
-              </Button>
-            </Link>
-          </div>
         </div>
 
         {/* Feature Cards */}
@@ -40,9 +28,9 @@ export default function HomePage() {
               <p className="text-gray-600 flex-1">
                 Complete team and player management with performance analytics, team setup, and detailed statistics in one place
               </p>
-              <Link href="/management" className="block mt-4">
-                <Button variant="outline" className="w-full">
-                  Manage Teams & Players →
+              <Link href="/management" className="block mt-6">
+                <Button size="lg" className="w-full bg-green-600 hover:bg-green-700 text-white">
+                  Team Management
                 </Button>
               </Link>
             </CardContent>
@@ -56,9 +44,9 @@ export default function HomePage() {
               <p className="text-gray-600 flex-1">
                 Real-time game tracking with tap counters for Ground Balls, Screens, and Effort Plays during live games
               </p>
-              <Link href="/tracker" className="block mt-4">
-                <Button variant="outline" className="w-full">
-                  Start Live Tracking →
+              <Link href="/tracker" className="block mt-6">
+                <Button size="lg" className="w-full bg-blue-600 hover:bg-blue-700 text-white">
+                  Start Tracking
                 </Button>
               </Link>
             </CardContent>
