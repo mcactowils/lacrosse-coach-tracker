@@ -10,7 +10,18 @@ interface HelpModalProps {
   onClose: () => void;
 }
 
-const categoryData = {
+interface CategoryData {
+  title: string;
+  definition: string;
+  examples: string[];
+  doesNotCount: string[];
+  target: string;
+  whyMatters: string;
+  coachingReminder?: string;
+  color: string;
+}
+
+const categoryData: Record<'ground_balls' | 'screens' | 'effort_plays', CategoryData> = {
   ground_balls: {
     title: 'Ground Balls (GB)',
     definition: 'A ground ball is counted when the player successfully gains possession of a loose ball during live play. This usually occurs after a shot, pass, check, or deflection.',
