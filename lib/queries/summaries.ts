@@ -67,7 +67,7 @@ export async function getTeamSeasonSummary(
       `;
     }
 
-    return result[0] || null;
+    return (result[0] as TeamSeasonSummary) || null;
   } catch (error) {
     console.error('Error in getTeamSeasonSummary:', error);
     return null;
